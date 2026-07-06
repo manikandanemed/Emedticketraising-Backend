@@ -348,3 +348,4 @@ D:\myfirstconsoleapp\Emedticket- Back and frontend\TicketRaising-Backend\TeamTra
 D:\myfirstconsoleapp\Emedticket- Back and frontend\TicketRaising-Backend\TeamTrack\obj\Debug\net8.0\TeamTrack.csproj.Up2Date
 D:\myfirstconsoleapp\Emedticket- Back and frontend\TicketRaising-Backend\TeamTrack\obj\Debug\net8.0\TeamTrack.genruntimeconfig.cache
 D:\myfirstconsoleapp\Emedticket- Back and frontend\TicketRaising-Backend\TeamTrack\obj\Debug\net8.0\ref\TeamTrack.dll
+D:\myfirstconsoleapp\Emedticket- Back and frontend\TicketRaising-Backend\TeamTrack\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
