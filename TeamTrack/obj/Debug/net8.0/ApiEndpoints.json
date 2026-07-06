@@ -212,6 +212,22 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "GetBuilds",
+    "RelativePath": "api/Project/{projectId}/builds",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "projectId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "UpdateProjectMembers",
     "RelativePath": "api/Project/{projectId}/members",
     "HttpMethod": "PUT",
@@ -322,6 +338,38 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "CreateBuild",
+    "RelativePath": "api/Project/builds",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.CreateSoftwareBuildRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "DeleteBuild",
+    "RelativePath": "api/Project/builds/{buildId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "buildId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "GetClients",
     "RelativePath": "api/Project/clients",
     "HttpMethod": "GET",
@@ -341,6 +389,22 @@
       {
         "Name": "request",
         "Type": "TeamTrack.DTOs.CreateClientRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "DeleteClient",
+    "RelativePath": "api/Project/clients/{clientId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "clientId",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],
@@ -435,6 +499,22 @@
       {
         "Name": "request",
         "Type": "TeamTrack.DTOs.CreateModuleRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "DeleteModule",
+    "RelativePath": "api/Project/modules/{moduleId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "moduleId",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],
@@ -546,6 +626,22 @@
       {
         "Name": "request",
         "Type": "TeamTrack.DTOs.CreateProductRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "DeleteProduct",
+    "RelativePath": "api/Project/products/{productId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "productId",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],
@@ -709,6 +805,11 @@
       {
         "Name": "AssignedToUserId",
         "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "RaisedBuild",
+        "Type": "System.String",
         "IsRequired": false
       },
       {
@@ -909,6 +1010,11 @@
       },
       {
         "Name": "search",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "workType",
         "Type": "System.String",
         "IsRequired": false
       }

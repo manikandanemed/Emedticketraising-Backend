@@ -85,6 +85,8 @@ namespace TeamTrack.Models
         public string? Labels { get; set; }
         public string? Team { get; set; }
         public string? AttachmentUrls { get; set; }
+        public string? EpicName { get; set; }
+        public string? EpicColor { get; set; }
         public int ProjectId { get; set; }
         public int? ModuleId { get; set; } // Linked Module
         public int CreatedByUserId { get; set; }
@@ -93,6 +95,9 @@ namespace TeamTrack.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? CompletedAt { get; set; }
         public DateTime? DueDate { get; set; }
+        public string? FixedBillNumber { get; set; }
+        public string? RaisedBillNumber { get; set; }
+        public bool DeveloperBillLock { get; set; } = false;
 
         public Project? Project { get; set; }
         public Module? Module { get; set; }
@@ -111,6 +116,10 @@ namespace TeamTrack.Models
         public int WorkItemId { get; set; }
         public int RaisedByUserId { get; set; }
         public int? AssignedToUserId { get; set; }
+        public string? RaisedBuild { get; set; }
+        public string? FixedBuild { get; set; }
+        public string? Severity { get; set; }
+        public string? IssueType { get; set; } = "New"; // New, Reopen, Regression
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? FixedAt { get; set; }
@@ -141,7 +150,32 @@ namespace TeamTrack.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime NoteDate { get; set; } = DateTime.UtcNow.Date;
         public string Priority { get; set; } = "medium";
+        public int? AssignedToUserId { get; set; }
 
         public User? User { get; set; }
+        public User? AssignedTo { get; set; }
+    }
+
+    /// <summary>
+    /// Tracks every assignment, reassignment, and status change on a WorkItem (like Jira activity log)
+    /// </summary>
+    public class WorkItemActivityLog
+    {
+        public int Id { get; set; }
+        public int WorkItemId { get; set; }
+        /// <summary>Assigned | Reassigned | StatusChanged | Created</summary>
+        public string Action { get; set; } = string.Empty;
+        public int? FromUserId { get; set; }
+        public int? ToUserId { get; set; }
+        public string? FromStatus { get; set; }
+        public string? ToStatus { get; set; }
+        public int ByUserId { get; set; }
+        public string? Note { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        public WorkItem? WorkItem { get; set; }
+        public User? FromUser { get; set; }
+        public User? ToUser { get; set; }
+        public User? ByUser { get; set; }
     }
 }

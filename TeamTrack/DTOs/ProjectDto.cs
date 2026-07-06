@@ -38,6 +38,13 @@ namespace TeamTrack.DTOs
         public int? AssignedToUserId { get; set; }
         public DateTime? DueDate { get; set; }
         public int? ModuleId { get; set; }
+        public string? Severity { get; set; }
+        public string? EpicName { get; set; }
+        public string? EpicColor { get; set; }
+        public string? IssueType { get; set; }
+        public string? FixedBillNumber { get; set; }
+        public string? RaisedBillNumber { get; set; }
+        public bool DeveloperBillLock { get; set; } = false;
     }
 
     public class WorkItemResponseDto
@@ -68,6 +75,17 @@ namespace TeamTrack.DTOs
         public string? ClientName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? DueDate { get; set; }
+        public int ProjectId { get; set; }
+        public string? Severity { get; set; }
+        public string? EpicName { get; set; }
+        public string? EpicColor { get; set; }
+        public string? ParentEpicName { get; set; }
+        public string? ParentEpicColor { get; set; }
+        public string? IssueType { get; set; }
+        public int? AssignedToUserId { get; set; }
+        public string? FixedBillNumber { get; set; }
+        public string? RaisedBillNumber { get; set; }
+        public bool DeveloperBillLock { get; set; }
     }
 
     public class UpdateWorkItemDueDateRequestDto
@@ -85,6 +103,9 @@ namespace TeamTrack.DTOs
     public class UpdateWorkItemStatusRequestDto
     {
         public string Status { get; set; } = string.Empty; // pending, in_progress, completed, testing, bug_found, closed
+        public string? FixedBillNumber { get; set; }
+        public string? RaisedBillNumber { get; set; }
+        public bool? DeveloperBillLock { get; set; }
     }
 
     public class ReassignWorkItemRequestDto
@@ -105,5 +126,18 @@ namespace TeamTrack.DTOs
     public class UpdateProjectMembersRequestDto
     {
         public List<int> AssignedEmployeeIds { get; set; } = [];
+    }
+
+    public class WorkItemActivityLogDto
+    {
+        public int Id { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string? FromUser { get; set; }
+        public string? ToUser { get; set; }
+        public string? FromStatus { get; set; }
+        public string? ToStatus { get; set; }
+        public string ByUser { get; set; } = string.Empty;
+        public string? Note { get; set; }
+        public DateTime Timestamp { get; set; }
     }
 }

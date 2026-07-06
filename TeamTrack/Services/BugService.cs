@@ -31,6 +31,9 @@ namespace TeamTrack.Services
                 WorkItemId = request.WorkItemId,
                 RaisedByUserId = userId,
                 AssignedToUserId = request.AssignedToUserId,
+                RaisedBuild = request.RaisedBuild,
+                Severity = request.Severity,
+                IssueType = request.IssueType ?? "New",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -65,6 +68,9 @@ namespace TeamTrack.Services
                 WorkItemId = request.WorkItemId,
                 RaisedByUserId = userId,
                 AssignedToUserId = request.AssignedToUserId,
+                RaisedBuild = request.RaisedBuild,
+                Severity = request.Severity,
+                IssueType = request.IssueType ?? "New",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -120,7 +126,11 @@ namespace TeamTrack.Services
                 query = query.Where(b => b.Status == status);
 
             if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var parsedDate))
-                query = query.Where(b => DateOnly.FromDateTime(b.CreatedAt) == parsedDate);
+            {
+                var startDate = parsedDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                var endDate = parsedDate.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+                query = query.Where(b => b.CreatedAt >= startDate && b.CreatedAt <= endDate);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(b => b.Title.Contains(search) || b.BugNumber.Contains(search));
@@ -165,7 +175,11 @@ namespace TeamTrack.Services
                 query = query.Where(b => b.Status == status);
 
             if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var parsedDate))
-                query = query.Where(b => DateOnly.FromDateTime(b.CreatedAt) == parsedDate);
+            {
+                var startDate = parsedDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                var endDate = parsedDate.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+                query = query.Where(b => b.CreatedAt >= startDate && b.CreatedAt <= endDate);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(b => b.Title.Contains(search) || b.BugNumber.Contains(search));
@@ -191,7 +205,7 @@ namespace TeamTrack.Services
         {
             return bStatus.ToLower() switch
             {
-                "closed" => "completed",
+                "closed" or "resolved" => "completed",
                 "fixed" => "fixed",
                 "in_progress" => "in_progress",
                 _ => "pending"
@@ -207,9 +221,13 @@ namespace TeamTrack.Services
             bug.UpdatedAt = DateTime.UtcNow;
 
             if (request.Status == "fixed")
+            {
                 bug.FixedAt = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(request.FixedBuild))
+                    bug.FixedBuild = request.FixedBuild;
+            }
 
-            if (request.Status == "closed")
+            if (request.Status == "closed" || request.Status == "resolved")
                 bug.ClosedAt = DateTime.UtcNow;
 
             await _bugRepo.SaveAsync();
@@ -277,6 +295,10 @@ namespace TeamTrack.Services
                 WorkItemId = bug.WorkItemId,
                 RaisedBy = bug.RaisedBy?.Name ?? string.Empty,
                 AssignedTo = bug.AssignedTo?.Name,
+                RaisedBuild = bug.RaisedBuild,
+                FixedBuild = bug.FixedBuild,
+                Severity = bug.Severity,
+                IssueType = bug.IssueType,
                 CreatedAt = bug.CreatedAt,
                 FixedAt = bug.FixedAt,
                 ClosedAt = bug.ClosedAt

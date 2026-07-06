@@ -56,6 +56,18 @@ namespace TeamTrack.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fixed_at");
 
+                    b.Property<string>("FixedBuild")
+                        .HasColumnType("text")
+                        .HasColumnName("fixed_build");
+
+                    b.Property<string>("IssueType")
+                        .HasColumnType("text")
+                        .HasColumnName("issue_type");
+
+                    b.Property<string>("RaisedBuild")
+                        .HasColumnType("text")
+                        .HasColumnName("raised_build");
+
                     b.Property<int>("RaisedByUserId")
                         .HasColumnType("integer")
                         .HasColumnName("raised_by_user_id");
@@ -63,6 +75,10 @@ namespace TeamTrack.Migrations
                     b.Property<string>("ScreenshotUrl")
                         .HasColumnType("text")
                         .HasColumnName("screenshot_url");
+
+                    b.Property<string>("Severity")
+                        .HasColumnType("text")
+                        .HasColumnName("severity");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -94,6 +110,45 @@ namespace TeamTrack.Migrations
                     b.HasIndex("WorkItemId");
 
                     b.ToTable("bugs", (string)null);
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.Client", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClientNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("client_number");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientNumber")
+                        .IsUnique();
+
+                    b.ToTable("clients", (string)null);
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Comment", b =>
@@ -175,6 +230,51 @@ namespace TeamTrack.Migrations
                     b.ToTable("daily_status_notes", (string)null);
                 });
 
+            modelBuilder.Entity("TeamTrack.Models.Module", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("ModuleNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("module_number");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer")
+                        .HasColumnName("product_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModuleNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("modules", (string)null);
+                });
+
             modelBuilder.Entity("TeamTrack.Models.PersonalNote", b =>
                 {
                     b.Property<int>("Id")
@@ -183,6 +283,10 @@ namespace TeamTrack.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssignedToUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("assigned_to_user_id");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -208,9 +312,56 @@ namespace TeamTrack.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedToUserId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("personal_notes", (string)null);
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("ProductNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("product_number");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("products", (string)null);
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Project", b =>
@@ -221,6 +372,10 @@ namespace TeamTrack.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ClientId")
+                        .HasColumnType("integer")
+                        .HasColumnName("client_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -255,12 +410,47 @@ namespace TeamTrack.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClientId");
+
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("ProjectNumber")
                         .IsUnique();
 
                     b.ToTable("projects", (string)null);
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.SoftwareBuild", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BuildNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("build_number");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer")
+                        .HasColumnName("project_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("software_builds", (string)null);
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Ticket", b =>
@@ -426,13 +616,33 @@ namespace TeamTrack.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<bool>("DeveloperBillLock")
+                        .HasColumnType("boolean")
+                        .HasColumnName("developer_bill_lock");
+
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_date");
 
+                    b.Property<string>("EpicColor")
+                        .HasColumnType("text")
+                        .HasColumnName("epic_color");
+
+                    b.Property<string>("EpicName")
+                        .HasColumnType("text")
+                        .HasColumnName("epic_name");
+
+                    b.Property<string>("FixedBillNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("fixed_bill_number");
+
                     b.Property<string>("Labels")
                         .HasColumnType("text")
                         .HasColumnName("labels");
+
+                    b.Property<int?>("ModuleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("module_id");
 
                     b.Property<int?>("ParentId")
                         .HasColumnType("integer")
@@ -446,6 +656,10 @@ namespace TeamTrack.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer")
                         .HasColumnName("project_id");
+
+                    b.Property<string>("RaisedBillNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("raised_bill_number");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp with time zone")
@@ -485,12 +699,73 @@ namespace TeamTrack.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
+                    b.HasIndex("ModuleId");
+
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("WorkNumber")
                         .IsUnique();
 
                     b.ToTable("work_items", (string)null);
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.WorkItemActivityLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<int>("ByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("by_user_id");
+
+                    b.Property<string>("FromStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("from_status");
+
+                    b.Property<int?>("FromUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("from_user_id");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<string>("ToStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("to_status");
+
+                    b.Property<int?>("ToUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("to_user_id");
+
+                    b.Property<int>("WorkItemId")
+                        .HasColumnType("integer")
+                        .HasColumnName("work_item_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ByUserId");
+
+                    b.HasIndex("FromUserId");
+
+                    b.HasIndex("ToUserId");
+
+                    b.HasIndex("WorkItemId");
+
+                    b.ToTable("work_item_activity_logs", (string)null);
                 });
 
             modelBuilder.Entity("project_members", b =>
@@ -505,7 +780,7 @@ namespace TeamTrack.Migrations
 
                     b.HasIndex("user_id");
 
-                    b.ToTable("project_members", (string)null);
+                    b.ToTable("project_members");
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Bug", b =>
@@ -576,26 +851,73 @@ namespace TeamTrack.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("TeamTrack.Models.Module", b =>
+                {
+                    b.HasOne("TeamTrack.Models.Product", "Product")
+                        .WithMany("Modules")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("TeamTrack.Models.PersonalNote", b =>
                 {
+                    b.HasOne("TeamTrack.Models.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TeamTrack.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("AssignedTo");
+
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.Product", b =>
+                {
+                    b.HasOne("TeamTrack.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Project", b =>
                 {
+                    b.HasOne("TeamTrack.Models.Client", "Client")
+                        .WithMany("Projects")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TeamTrack.Models.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Client");
+
                     b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.SoftwareBuild", b =>
+                {
+                    b.HasOne("TeamTrack.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Ticket", b =>
@@ -629,6 +951,11 @@ namespace TeamTrack.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("TeamTrack.Models.Module", "Module")
+                        .WithMany("WorkItems")
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TeamTrack.Models.Project", "Project")
                         .WithMany("WorkItems")
                         .HasForeignKey("ProjectId")
@@ -639,7 +966,42 @@ namespace TeamTrack.Migrations
 
                     b.Navigation("CreatedBy");
 
+                    b.Navigation("Module");
+
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.WorkItemActivityLog", b =>
+                {
+                    b.HasOne("TeamTrack.Models.User", "ByUser")
+                        .WithMany()
+                        .HasForeignKey("ByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TeamTrack.Models.User", "FromUser")
+                        .WithMany()
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TeamTrack.Models.User", "ToUser")
+                        .WithMany()
+                        .HasForeignKey("ToUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TeamTrack.Models.WorkItem", "WorkItem")
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ByUser");
+
+                    b.Navigation("FromUser");
+
+                    b.Navigation("ToUser");
+
+                    b.Navigation("WorkItem");
                 });
 
             modelBuilder.Entity("project_members", b =>
@@ -655,6 +1017,21 @@ namespace TeamTrack.Migrations
                         .HasForeignKey("user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.Client", b =>
+                {
+                    b.Navigation("Projects");
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.Module", b =>
+                {
+                    b.Navigation("WorkItems");
+                });
+
+            modelBuilder.Entity("TeamTrack.Models.Product", b =>
+                {
+                    b.Navigation("Modules");
                 });
 
             modelBuilder.Entity("TeamTrack.Models.Project", b =>

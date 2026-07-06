@@ -3081,11 +3081,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\myfirstconsoleapp\\TicketRaising-Backend\\TeamTrack\\TeamTrack.csproj",
+      "projectUniqueName": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\TeamTrack.csproj",
       "projectName": "TeamTrack",
-      "projectPath": "D:\\myfirstconsoleapp\\TicketRaising-Backend\\TeamTrack\\TeamTrack.csproj",
+      "projectPath": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\TeamTrack.csproj",
       "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-      "outputPath": "D:\\myfirstconsoleapp\\TicketRaising-Backend\\TeamTrack\\obj\\",
+      "outputPath": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

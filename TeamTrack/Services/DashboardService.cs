@@ -52,7 +52,7 @@ namespace TeamTrack.Services
             var workItemStatusCount = new WorkItemStatusCountDto
             {
                 Pending = normalWorkItems.Count(w => w.Status == "pending" || w.Status == "assigned" || w.Status == "reopened"),
-                InProgress = normalWorkItems.Count(w => w.Status == "in_progress" || w.Status == "waiting_customer" || w.Status == "future_release"),
+                InProgress = normalWorkItems.Count(w => w.Status == "in_progress" || w.Status == "future_release"),
                 Completed = normalWorkItems.Count(w => w.Status == "completed"),
                 Testing = normalWorkItems.Count(w => w.Status == "testing"),
                 BugFound = normalWorkItems.Count(w => w.Status == "bug_found"),
@@ -92,7 +92,7 @@ namespace TeamTrack.Services
                     EmployeeName = emp.Name,
                     TotalAssigned = empWorkItems.Count,
                     Pending = empWorkItems.Count(w => w.Status == "pending" || w.Status == "assigned" || w.Status == "reopened"),
-                    InProgress = empWorkItems.Count(w => w.Status == "in_progress" || w.Status == "waiting_customer" || w.Status == "future_release"),
+                    InProgress = empWorkItems.Count(w => w.Status == "in_progress" || w.Status == "future_release"),
                     Completed = empWorkItems.Count(w => w.Status == "completed"),
                     Testing = empWorkItems.Count(w => w.Status == "testing"),
                     BugFound = empWorkItems.Count(w => w.Status == "bug_found"),

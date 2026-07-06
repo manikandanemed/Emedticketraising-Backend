@@ -660,6 +660,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "workType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -709,6 +716,9 @@
                     "type": "integer",
                     "format": "int32"
                   },
+                  "RaisedBuild": {
+                    "type": "string"
+                  },
                   "screenshot": {
                     "type": "string",
                     "format": "binary"
@@ -729,6 +739,9 @@
                   "style": "form"
                 },
                 "AssignedToUserId": {
+                  "style": "form"
+                },
+                "RaisedBuild": {
                   "style": "form"
                 },
                 "screenshot": {
@@ -1566,6 +1579,152 @@
         }
       }
     },
+    "/api/Project/{projectId}/builds": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Project/builds": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSoftwareBuildRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSoftwareBuildRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSoftwareBuildRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Project/builds/{buildId}": {
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "buildId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Project/clients/{clientId}": {
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Project/products/{productId}": {
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Project/modules/{moduleId}": {
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "moduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/WeatherForecast": {
       "get": {
         "tags": [
@@ -1751,6 +1910,20 @@
         },
         "additionalProperties": false
       },
+      "CreateSoftwareBuildRequestDto": {
+        "type": "object",
+        "properties": {
+          "buildNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "projectId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateWorkItemRequestDto": {
         "type": "object",
         "properties": {
@@ -1892,6 +2065,10 @@
         "type": "object",
         "properties": {
           "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "fixedBuild": {
             "type": "string",
             "nullable": true
           }

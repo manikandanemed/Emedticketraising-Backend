@@ -11,21 +11,31 @@ namespace TeamTrack.Services
         private readonly IRepository<WorkItem> _workItemRepo;
         private readonly IRepository<User> _userRepo;
         private readonly IRepository<Bug> _bugRepo;
+        private readonly IRepository<WorkItemActivityLog> _activityRepo;
 
-        public ProjectService(IRepository<Project> projectRepo, IRepository<WorkItem> workItemRepo, IRepository<User> userRepo, IRepository<Bug> bugRepo)
+        public ProjectService(IRepository<Project> projectRepo, IRepository<WorkItem> workItemRepo, IRepository<User> userRepo, IRepository<Bug> bugRepo, IRepository<WorkItemActivityLog> activityRepo)
         {
             _projectRepo = projectRepo;
             _workItemRepo = workItemRepo;
             _userRepo = userRepo;
             _bugRepo = bugRepo;
+            _activityRepo = activityRepo;
         }
 
         public async Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto request, int userId)
         {
-            var count = await _projectRepo.Query().CountAsync();
+            // Generate short prefix from project name (e.g. "Sigichai" → "SIG")
+            var nameLetters = new string(request.Name.Where(char.IsLetter).ToArray());
+            var rawPrefix = nameLetters.Length >= 3 ? nameLetters.Substring(0, 3).ToUpper() : nameLetters.ToUpper().PadRight(3, 'X');
+
+            // Ensure uniqueness: if prefix already used, append a number
+            var existingWithPrefix = await _projectRepo.Query()
+                .CountAsync(p => p.ProjectNumber.StartsWith(rawPrefix));
+            var projectNumber = existingWithPrefix == 0 ? rawPrefix : $"{rawPrefix}{existingWithPrefix + 1}";
+
             var project = new Project
             {
-                ProjectNumber = $"PRJ-{(count + 1):D3}",
+                ProjectNumber = projectNumber,
                 Name = request.Name,
                 Description = request.Description,
                 Status = "active",
@@ -130,10 +140,27 @@ namespace TeamTrack.Services
 
         public async Task<WorkItemResponseDto> CreateWorkItemAsync(int projectId, CreateWorkItemRequestDto request, int userId)
         {
-            var count = await _workItemRepo.Query().CountAsync();
+            // ── Project-based work number (SIG-001, EMD-002, …) ──────────────
+            var project = await _projectRepo.Query().FirstOrDefaultAsync(p => p.Id == projectId);
+            var prefix = project?.ProjectNumber ?? "WRK";
+            
+            string workNumber;
+            var isBug = request.WorkType != null && request.WorkType.ToLower() == "bug";
+            if (isBug)
+            {
+                var bugCount = await _workItemRepo.Query().CountAsync(w => w.ProjectId == projectId && w.WorkType.ToLower() == "bug");
+                workNumber = $"{prefix}-BUG-{(bugCount + 1):D3}";
+            }
+            else
+            {
+                var taskCount = await _workItemRepo.Query().CountAsync(w => w.ProjectId == projectId && w.WorkType.ToLower() != "bug");
+                workNumber = $"{prefix}-{(taskCount + 1):D3}";
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             var workItem = new WorkItem
             {
-                WorkNumber = $"WRK-{(count + 1):D3}",
+                WorkNumber = workNumber,
                 Title = request.Title,
                 Description = request.Description,
                 Priority = request.Priority,
@@ -144,31 +171,51 @@ namespace TeamTrack.Services
                 Labels = request.Labels,
                 Team = request.Team,
                 AttachmentUrls = request.AttachmentUrls,
+                EpicName = request.EpicName,
+                EpicColor = request.EpicColor,
                 ProjectId = projectId,
                 ModuleId = request.ModuleId,
                 CreatedByUserId = userId,
                 AssignedToUserId = request.AssignedToUserId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                DueDate = request.DueDate.HasValue ? DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc) : null
+                DueDate = request.DueDate.HasValue ? DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc) : null,
+                FixedBillNumber = request.FixedBillNumber,
+                RaisedBillNumber = request.RaisedBillNumber,
+                DeveloperBillLock = request.DeveloperBillLock
             };
 
             await _workItemRepo.AddAsync(workItem);
             await _workItemRepo.SaveAsync();
 
+            // ── Activity log: Created ──────────────────────────────────────────
+            var createLog = new WorkItemActivityLog
+            {
+                WorkItemId = workItem.Id,
+                Action = "Created",
+                ByUserId = userId,
+                ToUserId = request.AssignedToUserId,
+                Note = request.AssignedToUserId.HasValue ? null : "No assignee at creation",
+                Timestamp = DateTime.UtcNow
+            };
+            await _activityRepo.AddAsync(createLog);
+            await _activityRepo.SaveAsync();
+            // ─────────────────────────────────────────────────────────────────
+
             // If work type is Bug, automatically create a linked Bug record so it shows up in the bug queues
             if (workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase))
             {
-                var bugCount = await _bugRepo.Query().CountAsync();
                 var bug = new Bug
                 {
-                    BugNumber = $"BUG-{(bugCount + 1):D3}",
+                    BugNumber = workItem.WorkNumber,
                     Title = workItem.Title,
                     Description = workItem.Description,
                     Status = MapWorkItemStatusToBugStatus(workItem.Status),
                     WorkItemId = workItem.Id,
                     RaisedByUserId = userId,
                     AssignedToUserId = workItem.AssignedToUserId,
+                    Severity = request.Severity,
+                    IssueType = request.IssueType ?? "New",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -220,7 +267,10 @@ namespace TeamTrack.Services
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(status) && status != "all")
-                query = query.Where(w => w.Status == status);
+            {
+                var statuses = status.Split(',').Select(s => s.Trim()).ToList();
+                query = query.Where(w => statuses.Contains(w.Status));
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(w => w.Title.Contains(search) || w.WorkNumber.Contains(search));
@@ -263,7 +313,7 @@ namespace TeamTrack.Services
             return items.Select(w => MapWorkItemToDto(w, parents)).ToList();
         }
 
-        public async Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search)
+        public async Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search, string? workType = null)
         {
             var query = _workItemRepo.Query()
                 .Include(w => w.Project)
@@ -276,10 +326,20 @@ namespace TeamTrack.Services
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(status) && status != "all")
-                query = query.Where(w => w.Status == status);
+            {
+                var statuses = status.Split(',').Select(s => s.Trim()).ToList();
+                query = query.Where(w => statuses.Contains(w.Status));
+            }
+
+            if (!string.IsNullOrWhiteSpace(workType) && workType != "all")
+                query = query.Where(w => w.WorkType.ToLower() == workType.ToLower());
 
             if (!string.IsNullOrWhiteSpace(dueDate) && DateOnly.TryParse(dueDate, out var parsedDate))
-                query = query.Where(w => w.DueDate.HasValue && DateOnly.FromDateTime(w.DueDate.Value) == parsedDate);
+            {
+                var startDate = parsedDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                var endDate = parsedDate.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+                query = query.Where(w => w.DueDate.HasValue && w.DueDate.Value >= startDate && w.DueDate.Value <= endDate);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(w => w.Title.Contains(search) || w.WorkNumber.Contains(search));
@@ -360,6 +420,9 @@ namespace TeamTrack.Services
                 Labels = w.Labels,
                 Team = w.Team,
                 AttachmentUrls = w.AttachmentUrls,
+                EpicName = w.EpicName,
+                EpicColor = w.EpicColor,
+                ProjectId = w.ProjectId,
                 ProjectName = w.Project?.Name ?? string.Empty,
                 ProjectNumber = w.Project?.ProjectNumber ?? string.Empty,
                 AssignedTo = w.AssignedTo?.Name,
@@ -371,7 +434,11 @@ namespace TeamTrack.Services
                 ClientId = w.Project?.ClientId,
                 ClientName = w.Project?.Client?.Name,
                 CreatedAt = w.CreatedAt,
-                DueDate = w.DueDate
+                DueDate = w.DueDate,
+                AssignedToUserId = w.AssignedToUserId,
+                FixedBillNumber = w.FixedBillNumber,
+                RaisedBillNumber = w.RaisedBillNumber,
+                DeveloperBillLock = w.DeveloperBillLock
             };
 
             if (w.ParentId.HasValue)
@@ -380,6 +447,8 @@ namespace TeamTrack.Services
                 {
                     dto.ParentWorkNumber = parent.WorkNumber;
                     dto.ParentTitle = parent.Title;
+                    dto.ParentEpicName = parent.EpicName;
+                    dto.ParentEpicColor = parent.EpicColor;
                 }
                 else
                 {
@@ -388,7 +457,18 @@ namespace TeamTrack.Services
                     {
                         dto.ParentWorkNumber = parentItem.WorkNumber;
                         dto.ParentTitle = parentItem.Title;
+                        dto.ParentEpicName = parentItem.EpicName;
+                        dto.ParentEpicColor = parentItem.EpicColor;
                     }
+                }
+            }
+
+            if (w.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase))
+            {
+                var linkedBug = _bugRepo.Query().FirstOrDefault(b => b.WorkItemId == w.Id);
+                if (linkedBug != null)
+                {
+                    dto.Severity = linkedBug.Severity;
                 }
             }
 
@@ -401,16 +481,48 @@ namespace TeamTrack.Services
             {
                 "completed" or "resolved" => "closed",
                 "fixed" => "fixed",
-                "in_progress" or "waiting_customer" => "in_progress",
+                "in_progress" => "in_progress",
                 _ => "open"
             };
         }
 
-        public async Task<WorkItemResponseDto?> UpdateWorkItemStatusAsync(int workItemId, UpdateWorkItemStatusRequestDto request)
+        public async Task<WorkItemResponseDto?> UpdateWorkItemStatusAsync(int workItemId, UpdateWorkItemStatusRequestDto request, int byUserId = 0)
         {
             var workItem = await _workItemRepo.GetAsync(w => w.Id == workItemId);
             if (workItem == null) return null;
 
+            var userObj = byUserId > 0 ? await _userRepo.GetAsync(u => u.Id == byUserId) : null;
+            var isPM = userObj?.UserType == "ProductManager";
+
+            // Enforce developer lock lock-out
+            if (workItem.DeveloperBillLock && !isPM)
+            {
+                throw new Exception("This work item is locked for billing and cannot be edited further.");
+            }
+
+            // Process developer checkbox lock selection
+            if (request.DeveloperBillLock.HasValue)
+            {
+                workItem.DeveloperBillLock = request.DeveloperBillLock.Value;
+                if (workItem.DeveloperBillLock)
+                {
+                    workItem.Status = "completed";
+                    workItem.CompletedAt = DateTime.UtcNow;
+                }
+            }
+
+            // Enforce manager-only billing field updates
+            if (request.RaisedBillNumber != null || request.FixedBillNumber != null)
+            {
+                if (!isPM)
+                {
+                    throw new Exception("Only managers can set or update billing reference numbers.");
+                }
+                if (request.RaisedBillNumber != null) workItem.RaisedBillNumber = request.RaisedBillNumber;
+                if (request.FixedBillNumber != null) workItem.FixedBillNumber = request.FixedBillNumber;
+            }
+
+            var oldStatus = workItem.Status;
             workItem.Status = request.Status;
             workItem.UpdatedAt = DateTime.UtcNow;
 
@@ -418,6 +530,67 @@ namespace TeamTrack.Services
                 workItem.CompletedAt = DateTime.UtcNow;
 
             await _workItemRepo.SaveAsync();
+
+            // Status synchronization with parent epic
+            if (workItem.ParentId.HasValue)
+            {
+                var parent = await _workItemRepo.GetAsync(p => p.Id == workItem.ParentId.Value);
+                if (parent != null && parent.WorkType.Equals("Epic", StringComparison.OrdinalIgnoreCase))
+                {
+                    // If child transitions to in_progress, transition parent Epic to in_progress if not already active/resolved
+                    if (request.Status.Equals("in_progress", StringComparison.OrdinalIgnoreCase) && 
+                        !parent.Status.Equals("in_progress", StringComparison.OrdinalIgnoreCase) && 
+                        !parent.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) && 
+                        !parent.Status.Equals("closed", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldParentStatus = parent.Status;
+                        parent.Status = "in_progress";
+                        parent.UpdatedAt = DateTime.UtcNow;
+                        await _workItemRepo.SaveAsync();
+                        await LogActivityAsync(parent.Id, "StatusChanged", oldParentStatus, "in_progress", byUserId);
+                    }
+                    // If child transitions to resolved/completed, auto-resolve parent Epic if all children are now resolved/completed
+                    else if (request.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) || 
+                             request.Status.Equals("closed", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var siblingWorkItems = await _workItemRepo.Query()
+                            .Where(w => w.ParentId == parent.Id && w.Id != workItem.Id)
+                            .ToListAsync();
+
+                        var allSiblingsCompleted = siblingWorkItems.All(w => 
+                            w.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) || 
+                            w.Status.Equals("closed", StringComparison.OrdinalIgnoreCase) || 
+                            w.Status.Equals("fixed", StringComparison.OrdinalIgnoreCase));
+
+                        if (allSiblingsCompleted)
+                        {
+                            var oldParentStatus = parent.Status;
+                            parent.Status = "completed";
+                            parent.CompletedAt = DateTime.UtcNow;
+                            parent.UpdatedAt = DateTime.UtcNow;
+                            await _workItemRepo.SaveAsync();
+                            await LogActivityAsync(parent.Id, "StatusChanged", oldParentStatus, "completed", byUserId);
+                        }
+                    }
+                }
+            }
+
+            // ── Activity log: StatusChanged ───────────────────────────────────
+            if (byUserId > 0 && oldStatus != request.Status)
+            {
+                var statusLog = new WorkItemActivityLog
+                {
+                    WorkItemId = workItemId,
+                    Action = "StatusChanged",
+                    FromStatus = oldStatus,
+                    ToStatus = request.Status,
+                    ByUserId = byUserId,
+                    Timestamp = DateTime.UtcNow
+                };
+                await _activityRepo.AddAsync(statusLog);
+                await _activityRepo.SaveAsync();
+            }
+            // ─────────────────────────────────────────────────────────────────
 
             // If it is a Bug, sync status with the corresponding Bug record
             if (workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase))
@@ -442,15 +615,31 @@ namespace TeamTrack.Services
             return MapWorkItemToDto(updated!);
         }
 
-        public async Task<WorkItemResponseDto?> ReassignWorkItemAsync(int workItemId, ReassignWorkItemRequestDto request)
+        public async Task<WorkItemResponseDto?> ReassignWorkItemAsync(int workItemId, ReassignWorkItemRequestDto request, int byUserId = 0)
         {
             var workItem = await _workItemRepo.GetAsync(w => w.Id == workItemId);
             if (workItem == null) return null;
 
+            var oldAssigneeId = workItem.AssignedToUserId;
             workItem.AssignedToUserId = request.AssignedToUserId;
             workItem.UpdatedAt = DateTime.UtcNow;
 
             await _workItemRepo.SaveAsync();
+
+            // ── Activity log: Reassigned ──────────────────────────────────────
+            var action = oldAssigneeId.HasValue ? "Reassigned" : "Assigned";
+            var reassignLog = new WorkItemActivityLog
+            {
+                WorkItemId = workItemId,
+                Action = action,
+                FromUserId = oldAssigneeId,
+                ToUserId = request.AssignedToUserId,
+                ByUserId = byUserId > 0 ? byUserId : request.AssignedToUserId,
+                Timestamp = DateTime.UtcNow
+            };
+            await _activityRepo.AddAsync(reassignLog);
+            await _activityRepo.SaveAsync();
+            // ─────────────────────────────────────────────────────────────────
 
             // If it is a Bug, sync assignee with the corresponding Bug record
             if (workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase))
@@ -514,6 +703,66 @@ namespace TeamTrack.Services
             return true;
         }
 
+        public async Task<List<WorkItemActivityLogDto>> GetWorkItemActivityAsync(int workItemId)
+        {
+            var logs = await _activityRepo.Query()
+                .Include(a => a.ByUser)
+                .Include(a => a.FromUser)
+                .Include(a => a.ToUser)
+                .Where(a => a.WorkItemId == workItemId)
+                .OrderBy(a => a.Timestamp)
+                .ToListAsync();
+
+            return logs.Select(a => new WorkItemActivityLogDto
+            {
+                Id        = a.Id,
+                Action    = a.Action,
+                FromUser  = a.FromUser?.Name,
+                ToUser    = a.ToUser?.Name,
+                FromStatus = a.FromStatus,
+                ToStatus  = a.ToStatus,
+                ByUser    = a.ByUser?.Name ?? "System",
+                Note      = a.Note,
+                Timestamp = a.Timestamp
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Returns all work items the user was EVER involved in via the activity log
+        /// (created, assigned, reassigned from/to) — even after they were reassigned away.
+        /// This lets Employee 1 see history of tasks they previously owned.
+        /// </summary>
+        public async Task<List<WorkItemResponseDto>> GetInvolvedWorkItemsAsync(int userId)
+        {
+            // Find all workItemIds where this user appears in the activity log
+            var involvedWorkItemIds = await _activityRepo.Query()
+                .Where(a =>
+                    a.FromUserId == userId ||
+                    a.ToUserId   == userId ||
+                    a.ByUserId   == userId)
+                .Select(a => a.WorkItemId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!involvedWorkItemIds.Any())
+                return [];
+
+            // Fetch the full work items (excluding ones currently assigned to this user — those show in MyTasks)
+            var items = await _workItemRepo.Query()
+                .Include(w => w.Project).ThenInclude(p => p.Client)
+                .Include(w => w.Module).ThenInclude(m => m.Product)
+                .Include(w => w.AssignedTo)
+                .Include(w => w.CreatedBy)
+                .Where(w => involvedWorkItemIds.Contains(w.Id) && w.AssignedToUserId != userId)
+                .OrderByDescending(w => w.UpdatedAt)
+                .ToListAsync();
+
+            var parentIds = items.Where(w => w.ParentId.HasValue).Select(w => w.ParentId!.Value).Distinct().ToList();
+            var parents = await _workItemRepo.Query().Where(p => parentIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+
+            return items.Select(w => MapWorkItemToDto(w, parents)).ToList();
+        }
+
         public async Task<List<EmployeeFullDto>> GetAllEmployeesFullAsync()
         {
             var employees = await _userRepo.Query()
@@ -554,6 +803,22 @@ namespace TeamTrack.Services
             await _projectRepo.SaveAsync();
 
             return MapProjectToDto(project);
+        }
+
+        private async Task LogActivityAsync(int workItemId, string action, string? oldStatus, string? toStatus, int byUserId)
+        {
+            if (byUserId <= 0) return;
+            var log = new WorkItemActivityLog
+            {
+                WorkItemId = workItemId,
+                Action = action,
+                FromStatus = oldStatus,
+                ToStatus = toStatus,
+                ByUserId = byUserId,
+                Timestamp = DateTime.UtcNow
+            };
+            await _activityRepo.AddAsync(log);
+            await _activityRepo.SaveAsync();
         }
     }
 }

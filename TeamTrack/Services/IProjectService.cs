@@ -22,19 +22,21 @@ namespace TeamTrack.Services
         Task<List<WorkItemResponseDto>> GetWorkItemsByProjectAsync(int projectId);
 
         // Paginated employee work items
-        Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search);
+        Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search, string? workType = null);
 
         // Non-paged (kept for backward compatibility if needed)
         Task<List<WorkItemResponseDto>> GetWorkItemsByEmployeeAsync(int userId);
 
         Task<List<EmployeeDropdownDto>> GetAllEmployeesAsync();
-        Task<WorkItemResponseDto?> UpdateWorkItemStatusAsync(int workItemId, UpdateWorkItemStatusRequestDto request);
-        Task<WorkItemResponseDto?> ReassignWorkItemAsync(int workItemId, ReassignWorkItemRequestDto request);
+        Task<WorkItemResponseDto?> UpdateWorkItemStatusAsync(int workItemId, UpdateWorkItemStatusRequestDto request, int byUserId = 0);
+        Task<WorkItemResponseDto?> ReassignWorkItemAsync(int workItemId, ReassignWorkItemRequestDto request, int byUserId = 0);
         Task<WorkItemResponseDto?> GetWorkItemByIdAsync(int workItemId);
         Task<WorkItemResponseDto?> UpdateWorkItemDueDateAsync(int workItemId, UpdateWorkItemDueDateRequestDto request);
         Task<bool> DeleteProjectAsync(int projectId);
         Task<List<EmployeeFullDto>> GetAllEmployeesFullAsync();
         Task<ProjectResponseDto?> UpdateProjectMembersAsync(int projectId, UpdateProjectMembersRequestDto request);
+        Task<List<WorkItemActivityLogDto>> GetWorkItemActivityAsync(int workItemId);
+        Task<List<WorkItemResponseDto>> GetInvolvedWorkItemsAsync(int userId);
     }
 }
 

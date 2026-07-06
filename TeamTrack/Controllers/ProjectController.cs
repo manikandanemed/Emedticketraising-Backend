@@ -158,11 +158,21 @@ namespace TeamTrack.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? status = null,
             [FromQuery] string? dueDate = null,
-            [FromQuery] string? search = null)
+            [FromQuery] string? search = null,
+            [FromQuery] string? workType = null)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _projectService.GetWorkItemsByEmployeePagedAsync(userId, page, pageSize, status, dueDate, search);
+            var result = await _projectService.GetWorkItemsByEmployeePagedAsync(userId, page, pageSize, status, dueDate, search, workType);
             return Ok(ApiResponse<PagedResult<WorkItemResponseDto>>.SuccessResponse(result, "Work items fetched successfully"));
+        }
+
+        [HttpGet("workitems/myworks/involved")]
+        [Authorize(Roles = "Employee,ProductManager")]
+        public async Task<IActionResult> GetInvolvedWorkItems()
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _projectService.GetInvolvedWorkItemsAsync(userId);
+            return Ok(ApiResponse<List<WorkItemResponseDto>>.SuccessResponse(result, "Involved work items fetched successfully"));
         }
 
         [HttpGet("employees/dropdown")]
@@ -271,7 +281,8 @@ namespace TeamTrack.Controllers
             if (string.IsNullOrEmpty(request.Status))
                 return BadRequest(ApiResponse<string>.FailureResponse("Status is required"));
 
-            var result = await _projectService.UpdateWorkItemStatusAsync(workItemId, request);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _projectService.UpdateWorkItemStatusAsync(workItemId, request, userId);
             if (result == null)
                 return NotFound(ApiResponse<string>.FailureResponse("WorkItem not found"));
 
@@ -282,11 +293,20 @@ namespace TeamTrack.Controllers
         [Authorize(Roles = "Employee,ProductManager")]
         public async Task<IActionResult> ReassignWorkItem(int workItemId, [FromBody] ReassignWorkItemRequestDto request)
         {
-            var result = await _projectService.ReassignWorkItemAsync(workItemId, request);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _projectService.ReassignWorkItemAsync(workItemId, request, userId);
             if (result == null)
                 return NotFound(ApiResponse<string>.FailureResponse("WorkItem not found"));
 
             return Ok(ApiResponse<WorkItemResponseDto>.SuccessResponse(result, "WorkItem reassigned successfully"));
+        }
+
+        [HttpGet("workitems/{workItemId}/activity")]
+        [Authorize(Roles = "Employee,ProductManager")]
+        public async Task<IActionResult> GetWorkItemActivity(int workItemId)
+        {
+            var logs = await _projectService.GetWorkItemActivityAsync(workItemId);
+            return Ok(ApiResponse<List<WorkItemActivityLogDto>>.SuccessResponse(logs, "Activity log fetched"));
         }
 
         [HttpPut("workitems/{workItemId}/duedate")]
@@ -417,7 +437,10 @@ namespace TeamTrack.Controllers
             if (userIdClaim == null) return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized."));
             int userId = int.Parse(userIdClaim.Value);
 
-            var query = context.PersonalNotes.Where(n => n.UserId == userId);
+            var query = context.PersonalNotes
+                .Include(n => n.AssignedTo)
+                .Include(n => n.User)
+                .Where(n => n.UserId == userId || n.AssignedToUserId == userId);
 
             if (!string.IsNullOrEmpty(date) && DateTime.TryParse(date, out var parsedDate))
             {
@@ -437,7 +460,11 @@ namespace TeamTrack.Controllers
                     Content = n.Content,
                     CreatedAt = n.CreatedAt,
                     NoteDate = n.NoteDate,
-                    Priority = n.Priority
+                    Priority = n.Priority,
+                    AssignedToUserId = n.AssignedToUserId,
+                    AssignedToUserName = n.AssignedTo != null ? n.AssignedTo.Name : null,
+                    CreatorUserId = n.UserId,
+                    CreatorUserName = n.User != null ? n.User.Name : null
                 })
                 .ToListAsync();
 
@@ -471,19 +498,33 @@ namespace TeamTrack.Controllers
                 Content = request.Content,
                 CreatedAt = DateTime.UtcNow,
                 NoteDate = noteDate.Date.ToUniversalTime(),
-                Priority = priority.ToLower()
+                Priority = priority.ToLower(),
+                AssignedToUserId = request.AssignedToUserId
             };
 
             context.PersonalNotes.Add(note);
             await context.SaveChangesAsync();
 
+            // Load assignee name if set
+            string? assignedToName = null;
+            if (note.AssignedToUserId.HasValue)
+            {
+                var assignedUser = await context.Users.FindAsync(note.AssignedToUserId.Value);
+                assignedToName = assignedUser?.Name;
+            }
+
+            var creatorUser = await context.Users.FindAsync(note.UserId);
             var dto = new PersonalNoteDto
             {
                 Id = note.Id,
                 Content = note.Content,
                 CreatedAt = note.CreatedAt,
                 NoteDate = note.NoteDate,
-                Priority = note.Priority
+                Priority = note.Priority,
+                AssignedToUserId = note.AssignedToUserId,
+                AssignedToUserName = assignedToName,
+                CreatorUserId = note.UserId,
+                CreatorUserName = creatorUser?.Name
             };
 
             return Ok(ApiResponse<PersonalNoteDto>.SuccessResponse(dto, "Personal note created successfully."));
@@ -519,19 +560,33 @@ namespace TeamTrack.Controllers
             note.Content = request.Content;
             note.NoteDate = noteDate.Date.ToUniversalTime();
             note.Priority = priority.ToLower();
+            note.AssignedToUserId = request.AssignedToUserId;
 
             await context.SaveChangesAsync();
 
-            var dto = new PersonalNoteDto
+            // Load assignee name if set
+            string? assignedToName = null;
+            if (note.AssignedToUserId.HasValue)
+            {
+                var assignedUser = await context.Users.FindAsync(note.AssignedToUserId.Value);
+                assignedToName = assignedUser?.Name;
+            }
+
+            var creatorUserObj = await context.Users.FindAsync(note.UserId);
+            var dtoUpdate = new PersonalNoteDto
             {
                 Id = note.Id,
                 Content = note.Content,
                 CreatedAt = note.CreatedAt,
                 NoteDate = note.NoteDate,
-                Priority = note.Priority
+                Priority = note.Priority,
+                AssignedToUserId = note.AssignedToUserId,
+                AssignedToUserName = assignedToName,
+                CreatorUserId = note.UserId,
+                CreatorUserName = creatorUserObj?.Name
             };
 
-            return Ok(ApiResponse<PersonalNoteDto>.SuccessResponse(dto, "Personal note updated successfully."));
+            return Ok(ApiResponse<PersonalNoteDto>.SuccessResponse(dtoUpdate, "Personal note updated successfully."));
         }
 
         [HttpDelete("personalnotes/{id}")]
@@ -734,6 +789,126 @@ namespace TeamTrack.Controllers
 
             return Ok(ApiResponse<ModuleDto>.SuccessResponse(dto, "Module created successfully"));
         }
+
+        [HttpGet("{projectId}/builds")]
+        public async Task<IActionResult> GetBuilds(int projectId, [FromServices] IRepository<SoftwareBuild> buildRepo)
+        {
+            var builds = await buildRepo.Query()
+                .Include(b => b.Project)
+                .Where(b => b.ProjectId == projectId && b.IsActive)
+                .OrderByDescending(b => b.CreatedAt)
+                .Select(b => new SoftwareBuildDto
+                {
+                    Id = b.Id,
+                    BuildNumber = b.BuildNumber,
+                    ProjectId = b.ProjectId,
+                    ProjectName = b.Project != null ? b.Project.Name : string.Empty,
+                    IsActive = b.IsActive,
+                    CreatedAt = b.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<List<SoftwareBuildDto>>.SuccessResponse(builds, "Builds fetched successfully"));
+        }
+
+        [HttpPost("builds")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> CreateBuild([FromBody] CreateSoftwareBuildRequestDto request, [FromServices] IRepository<SoftwareBuild> buildRepo, [FromServices] IRepository<Project> projectRepo)
+        {
+            if (string.IsNullOrWhiteSpace(request.BuildNumber))
+                return BadRequest(ApiResponse<string>.FailureResponse("Build number is required"));
+
+            var projectExists = await projectRepo.Query().AnyAsync(p => p.Id == request.ProjectId);
+            if (!projectExists)
+                return NotFound(ApiResponse<string>.FailureResponse("Project not found"));
+
+            var exists = await buildRepo.Query().AnyAsync(b => b.ProjectId == request.ProjectId && b.BuildNumber.ToLower() == request.BuildNumber.Trim().ToLower());
+            if (exists)
+                return BadRequest(ApiResponse<string>.FailureResponse("Build number already exists for this project"));
+
+            var build = new SoftwareBuild
+            {
+                BuildNumber = request.BuildNumber.Trim(),
+                ProjectId = request.ProjectId,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await buildRepo.AddAsync(build);
+            await buildRepo.SaveAsync();
+
+            var created = await buildRepo.Query()
+                .Include(b => b.Project)
+                .FirstOrDefaultAsync(b => b.Id == build.Id);
+
+            var dto = new SoftwareBuildDto
+            {
+                Id = created!.Id,
+                BuildNumber = created.BuildNumber,
+                ProjectId = created.ProjectId,
+                ProjectName = created.Project?.Name ?? string.Empty,
+                IsActive = created.IsActive,
+                CreatedAt = created.CreatedAt
+            };
+
+            return Ok(ApiResponse<SoftwareBuildDto>.SuccessResponse(dto, "Build created successfully"));
+        }
+
+        [HttpDelete("builds/{buildId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> DeleteBuild(int buildId, [FromServices] IRepository<SoftwareBuild> buildRepo)
+        {
+            var build = await buildRepo.GetAsync(b => b.Id == buildId);
+            if (build == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Build not found"));
+
+            buildRepo.Remove(build);
+            await buildRepo.SaveAsync();
+
+            return Ok(ApiResponse<string>.SuccessResponse("Build deleted successfully", "Build deleted successfully"));
+        }
+
+        [HttpDelete("clients/{clientId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> DeleteClient(int clientId, [FromServices] IRepository<Client> clientRepo)
+        {
+            var client = await clientRepo.GetAsync(c => c.Id == clientId);
+            if (client == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Client not found"));
+
+            clientRepo.Remove(client);
+            await clientRepo.SaveAsync();
+
+            return Ok(ApiResponse<string>.SuccessResponse("Client deleted successfully", "Client deleted successfully"));
+        }
+
+        [HttpDelete("products/{productId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> DeleteProduct(int productId, [FromServices] IRepository<Product> productRepo)
+        {
+            var product = await productRepo.GetAsync(p => p.Id == productId);
+            if (product == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Product not found"));
+
+            productRepo.Remove(product);
+            await productRepo.SaveAsync();
+
+            return Ok(ApiResponse<string>.SuccessResponse("Product deleted successfully", "Product deleted successfully"));
+        }
+
+        [HttpDelete("modules/{moduleId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> DeleteModule(int moduleId, [FromServices] IRepository<Module> moduleRepo)
+        {
+            var module = await moduleRepo.GetAsync(m => m.Id == moduleId);
+            if (module == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Module not found"));
+
+            moduleRepo.Remove(module);
+            await moduleRepo.SaveAsync();
+
+            return Ok(ApiResponse<string>.SuccessResponse("Module deleted successfully", "Module deleted successfully"));
+        }
     }
 
     public class PersonalNoteDto
@@ -743,6 +918,10 @@ namespace TeamTrack.Controllers
         public DateTime CreatedAt { get; set; }
         public DateTime NoteDate { get; set; }
         public string Priority { get; set; } = "medium";
+        public int? AssignedToUserId { get; set; }
+        public string? AssignedToUserName { get; set; }
+        public int CreatorUserId { get; set; }
+        public string? CreatorUserName { get; set; }
     }
 
     public class CreatePersonalNoteRequest
@@ -750,5 +929,6 @@ namespace TeamTrack.Controllers
         public string Content { get; set; } = string.Empty;
         public DateTime? NoteDate { get; set; }
         public string? Priority { get; set; }
+        public int? AssignedToUserId { get; set; }
     }
 }

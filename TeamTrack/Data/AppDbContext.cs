@@ -18,6 +18,8 @@ namespace TeamTrack.Data
         public DbSet<Client> Clients => Set<Client>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<Module> Modules => Set<Module>();
+        public DbSet<SoftwareBuild> SoftwareBuilds => Set<SoftwareBuild>();
+        public DbSet<WorkItemActivityLog> WorkItemActivityLogs => Set<WorkItemActivityLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -148,6 +150,11 @@ namespace TeamTrack.Data
                 entity.Property(w => w.Labels).HasColumnName("labels");
                 entity.Property(w => w.Team).HasColumnName("team");
                 entity.Property(w => w.AttachmentUrls).HasColumnName("attachment_urls");
+                entity.Property(w => w.EpicName).HasColumnName("epic_name");
+                entity.Property(w => w.EpicColor).HasColumnName("epic_color");
+                entity.Property(w => w.FixedBillNumber).HasColumnName("fixed_bill_number");
+                entity.Property(w => w.RaisedBillNumber).HasColumnName("raised_bill_number");
+                entity.Property(w => w.DeveloperBillLock).HasColumnName("developer_bill_lock");
                 entity.HasIndex(w => w.WorkNumber).IsUnique();
 
                 entity.HasOne(w => w.Project)
@@ -185,6 +192,10 @@ namespace TeamTrack.Data
                 entity.Property(b => b.WorkItemId).HasColumnName("work_item_id");
                 entity.Property(b => b.RaisedByUserId).HasColumnName("raised_by_user_id");
                 entity.Property(b => b.AssignedToUserId).HasColumnName("assigned_to_user_id");
+                entity.Property(b => b.RaisedBuild).HasColumnName("raised_build");
+                entity.Property(b => b.FixedBuild).HasColumnName("fixed_build");
+                entity.Property(b => b.Severity).HasColumnName("severity");
+                entity.Property(b => b.IssueType).HasColumnName("issue_type");
                 entity.Property(b => b.CreatedAt).HasColumnName("created_at");
                 entity.Property(b => b.UpdatedAt).HasColumnName("updated_at");
                 entity.Property(b => b.FixedAt).HasColumnName("fixed_at");
@@ -238,11 +249,17 @@ namespace TeamTrack.Data
                 entity.Property(n => n.CreatedAt).HasColumnName("created_at");
                 entity.Property(n => n.NoteDate).HasColumnName("note_date");
                 entity.Property(n => n.Priority).HasColumnName("priority");
+                entity.Property(n => n.AssignedToUserId).HasColumnName("assigned_to_user_id");
 
                 entity.HasOne(n => n.User)
                       .WithMany()
                       .HasForeignKey(n => n.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(n => n.AssignedTo)
+                      .WithMany()
+                      .HasForeignKey(n => n.AssignedToUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<Client>(entity =>
@@ -294,6 +311,58 @@ namespace TeamTrack.Data
                       .WithMany(p => p.Modules)
                       .HasForeignKey(m => m.ProductId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SoftwareBuild>(entity =>
+            {
+                entity.ToTable("software_builds");
+                entity.HasKey(sb => sb.Id);
+                entity.Property(sb => sb.Id).HasColumnName("id");
+                entity.Property(sb => sb.BuildNumber).HasColumnName("build_number");
+                entity.Property(sb => sb.ProjectId).HasColumnName("project_id");
+                entity.Property(sb => sb.IsActive).HasColumnName("is_active");
+                entity.Property(sb => sb.CreatedAt).HasColumnName("created_at");
+
+                entity.HasOne(sb => sb.Project)
+                      .WithMany()
+                      .HasForeignKey(sb => sb.ProjectId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<WorkItemActivityLog>(entity =>
+            {
+                entity.ToTable("work_item_activity_logs");
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Id).HasColumnName("id");
+                entity.Property(a => a.WorkItemId).HasColumnName("work_item_id");
+                entity.Property(a => a.Action).HasColumnName("action");
+                entity.Property(a => a.FromUserId).HasColumnName("from_user_id");
+                entity.Property(a => a.ToUserId).HasColumnName("to_user_id");
+                entity.Property(a => a.FromStatus).HasColumnName("from_status");
+                entity.Property(a => a.ToStatus).HasColumnName("to_status");
+                entity.Property(a => a.ByUserId).HasColumnName("by_user_id");
+                entity.Property(a => a.Note).HasColumnName("note");
+                entity.Property(a => a.Timestamp).HasColumnName("timestamp");
+
+                entity.HasOne(a => a.WorkItem)
+                      .WithMany()
+                      .HasForeignKey(a => a.WorkItemId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(a => a.ByUser)
+                      .WithMany()
+                      .HasForeignKey(a => a.ByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(a => a.FromUser)
+                      .WithMany()
+                      .HasForeignKey(a => a.FromUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(a => a.ToUser)
+                      .WithMany()
+                      .HasForeignKey(a => a.ToUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

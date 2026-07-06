@@ -55,6 +55,7 @@ builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IJiraImportService, JiraImportService>();
+builder.Services.AddHostedService<AttachmentCleanupHostedService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -280,4 +281,4 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.Run();
+app.Run();

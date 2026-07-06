@@ -1,4 +1,4 @@
-﻿namespace TeamTrack.Services
+namespace TeamTrack.Services
 {
     public class FileService : IFileService
     {
@@ -11,11 +11,11 @@
 
         public async Task<string> UploadScreenshotAsync(IFormFile file)
         {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt", ".zip" };
             var extension = Path.GetExtension(file.FileName).ToLower();
 
             if (!allowedExtensions.Contains(extension))
-                throw new Exception("Only image files are allowed (jpg, jpeg, png, gif, webp)");
+                throw new Exception("Only image files (jpg, jpeg, png, gif, webp), PDF, Word, Excel, text, and zip files are allowed.");
 
             var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "screenshots");
 
