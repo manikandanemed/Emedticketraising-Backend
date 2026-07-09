@@ -142,14 +142,6 @@ namespace TeamTrack.Controllers
             return Ok(ApiResponse<PagedResult<WorkItemResponseDto>>.SuccessResponse(result, "Work items fetched successfully"));
         }
 
-        [HttpGet("workitems/myworks")]
-        [Authorize(Roles = "Employee")]
-        public async Task<IActionResult> GetMyWorkItems()
-        {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _projectService.GetWorkItemsByEmployeeAsync(userId);
-            return Ok(ApiResponse<List<WorkItemResponseDto>>.SuccessResponse(result, "Work items fetched successfully"));
-        }
 
         [HttpGet("workitems/myworks/paged")]
         [Authorize(Roles = "Employee")]
@@ -213,27 +205,6 @@ namespace TeamTrack.Controllers
             return Ok(ApiResponse<List<BugResponseDto>>.SuccessResponse(result, "Bugs fetched successfully"));
         }
 
-        [HttpGet("workitems/bugs/mybugs/paged")]
-        [Authorize(Roles = "Employee")]
-        public async Task<IActionResult> GetMyBugsPaged(
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? status = null,
-            [FromQuery] string? date = null,
-            [FromQuery] string? search = null)
-        {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bugService.GetBugsByAssignedEmployeePagedAsync(userId, page, pageSize, status, date, search);
-            return Ok(ApiResponse<PagedResult<BugResponseDto>>.SuccessResponse(result, "Bugs fetched successfully"));
-        }
-
-        [HttpGet("workitems/bugs/all")]
-        [Authorize(Roles = "ProductManager")]
-        public async Task<IActionResult> GetAllBugs()
-        {
-            var result = await _bugService.GetAllBugsAsync();
-            return Ok(ApiResponse<List<BugResponseDto>>.SuccessResponse(result, "Bugs fetched successfully"));
-        }
 
         [HttpGet("workitems/bugs/all/paged")]
         [Authorize(Roles = "ProductManager")]
@@ -452,8 +423,8 @@ namespace TeamTrack.Controllers
                 .OrderBy(n => n.Priority == "critical" ? 1 :
                               n.Priority == "high" ? 2 :
                               n.Priority == "medium" ? 3 : 4)
-                .ThenByDescending(n => n.NoteDate)
-                .ThenByDescending(n => n.CreatedAt)
+                .ThenBy(n => n.NoteDate)
+                .ThenBy(n => n.CreatedAt)
                 .Select(n => new PersonalNoteDto
                 {
                     Id = n.Id,
@@ -796,7 +767,7 @@ namespace TeamTrack.Controllers
             var builds = await buildRepo.Query()
                 .Include(b => b.Project)
                 .Where(b => b.ProjectId == projectId && b.IsActive)
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderBy(b => b.CreatedAt)
                 .Select(b => new SoftwareBuildDto
                 {
                     Id = b.Id,

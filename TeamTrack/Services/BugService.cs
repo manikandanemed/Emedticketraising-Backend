@@ -94,7 +94,7 @@ namespace TeamTrack.Services
                 .Include(b => b.RaisedBy)
                 .Include(b => b.AssignedTo)
                 .Where(b => b.WorkItemId == workItemId)
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderBy(b => b.CreatedAt)
                 .ToListAsync();
 
             return bugs.Select(MapToDto).ToList();
@@ -107,7 +107,7 @@ namespace TeamTrack.Services
                 .Include(b => b.RaisedBy)
                 .Include(b => b.AssignedTo)
                 .Where(b => b.AssignedToUserId == userId)
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderBy(b => b.CreatedAt)
                 .ToListAsync();
 
             return bugs.Select(MapToDto).ToList();
@@ -137,7 +137,7 @@ namespace TeamTrack.Services
 
             var totalCount = await query.CountAsync();
             var items = await query
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderBy(b => b.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -157,7 +157,7 @@ namespace TeamTrack.Services
                 .Include(b => b.WorkItem)
                 .Include(b => b.RaisedBy)
                 .Include(b => b.AssignedTo)
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderBy(b => b.CreatedAt)
                 .ToListAsync();
 
             return bugs.Select(MapToDto).ToList();
@@ -186,7 +186,7 @@ namespace TeamTrack.Services
 
             var totalCount = await query.CountAsync();
             var items = await query
-                .OrderByDescending(b => b.CreatedAt)
+                .OrderBy(b => b.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

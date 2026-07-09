@@ -604,18 +604,6 @@
         }
       }
     },
-    "/api/Project/workitems/myworks": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Project/workitems/myworks/paged": {
       "get": {
         "tags": [
@@ -676,6 +664,18 @@
         }
       }
     },
+    "/api/Project/workitems/myworks/involved": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Project/employees/dropdown": {
       "get": {
         "tags": [
@@ -719,6 +719,12 @@
                   "RaisedBuild": {
                     "type": "string"
                   },
+                  "Severity": {
+                    "type": "string"
+                  },
+                  "IssueType": {
+                    "type": "string"
+                  },
                   "screenshot": {
                     "type": "string",
                     "format": "binary"
@@ -742,6 +748,12 @@
                   "style": "form"
                 },
                 "RaisedBuild": {
+                  "style": "form"
+                },
+                "Severity": {
+                  "style": "form"
+                },
+                "IssueType": {
                   "style": "form"
                 },
                 "screenshot": {
@@ -782,71 +794,6 @@
       }
     },
     "/api/Project/workitems/bugs/mybugs": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Project/workitems/bugs/mybugs/paged": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Project/workitems/bugs/all": {
       "get": {
         "tags": [
           "Project"
@@ -1072,6 +1019,29 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Project/workitems/{workItemId}/activity": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "parameters": [
+          {
+            "name": "workItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1724,45 +1694,6 @@
           }
         }
       }
-    },
-    "/WeatherForecast": {
-      "get": {
-        "tags": [
-          "WeatherForecast"
-        ],
-        "operationId": "GetWeatherForecast",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WeatherForecast"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WeatherForecast"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WeatherForecast"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -1860,6 +1791,11 @@
           },
           "priority": {
             "type": "string",
+            "nullable": true
+          },
+          "assignedToUserId": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         },
@@ -1983,6 +1919,33 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "severity": {
+            "type": "string",
+            "nullable": true
+          },
+          "epicName": {
+            "type": "string",
+            "nullable": true
+          },
+          "epicColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "issueType": {
+            "type": "string",
+            "nullable": true
+          },
+          "fixedBillNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "raisedBillNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "developerBillLock": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -2116,28 +2079,17 @@
           "status": {
             "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "WeatherForecast": {
-        "type": "object",
-        "properties": {
-          "date": {
+          },
+          "fixedBillNumber": {
             "type": "string",
-            "format": "date"
+            "nullable": true
           },
-          "temperatureC": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "temperatureF": {
-            "type": "integer",
-            "format": "int32",
-            "readOnly": true
-          },
-          "summary": {
+          "raisedBillNumber": {
             "type": "string",
+            "nullable": true
+          },
+          "developerBillLock": {
+            "type": "boolean",
             "nullable": true
           }
         },

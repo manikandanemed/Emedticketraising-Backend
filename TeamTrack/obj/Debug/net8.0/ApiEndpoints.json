@@ -681,6 +681,22 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "GetWorkItemActivity",
+    "RelativePath": "api/Project/workitems/{workItemId}/activity",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "workItemId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "GetBugsByWorkItem",
     "RelativePath": "api/Project/workitems/{workItemId}/bugs",
     "HttpMethod": "GET",
@@ -813,6 +829,16 @@
         "IsRequired": false
       },
       {
+        "Name": "Severity",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "IssueType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
         "Name": "screenshot",
         "Type": "Microsoft.AspNetCore.Http.IFormFile",
         "IsRequired": false
@@ -864,16 +890,6 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
-    "Method": "GetAllBugs",
-    "RelativePath": "api/Project/workitems/bugs/all",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "GetAllBugsPaged",
     "RelativePath": "api/Project/workitems/bugs/all/paged",
     "HttpMethod": "GET",
@@ -920,42 +936,6 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
-    "Method": "GetMyBugsPaged",
-    "RelativePath": "api/Project/workitems/bugs/mybugs/paged",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "page",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "pageSize",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "status",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "date",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "search",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "AddComment",
     "RelativePath": "api/Project/workitems/comments",
     "HttpMethod": "POST",
@@ -972,8 +952,8 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
-    "Method": "GetMyWorkItems",
-    "RelativePath": "api/Project/workitems/myworks",
+    "Method": "GetInvolvedWorkItems",
+    "RelativePath": "api/Project/workitems/myworks/involved",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -1036,26 +1016,5 @@
       }
     ],
     "ReturnTypes": []
-  },
-  {
-    "ContainingType": "TeamTrack.Controllers.WeatherForecastController",
-    "Method": "Get",
-    "RelativePath": "WeatherForecast",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[TeamTrack.WeatherForecast, TeamTrack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ],
-    "EndpointName": "GetWeatherForecast"
   }
 ]

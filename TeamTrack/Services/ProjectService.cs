@@ -108,7 +108,7 @@ namespace TeamTrack.Services
 
             var totalCount = await query.CountAsync();
             var items = await query
-                .OrderByDescending(p => p.CreatedAt)
+                .OrderBy(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -245,7 +245,7 @@ namespace TeamTrack.Services
                 .Include(w => w.AssignedTo)
                 .Include(w => w.CreatedBy)
                 .Where(w => w.ProjectId == projectId)
-                .OrderByDescending(w => w.CreatedAt)
+                .OrderBy(w => w.CreatedAt)
                 .ToListAsync();
 
             var parentIds = items.Where(w => w.ParentId.HasValue).Select(w => w.ParentId!.Value).Distinct().ToList();
@@ -277,7 +277,7 @@ namespace TeamTrack.Services
 
             var totalCount = await query.CountAsync();
             var items = await query
-                .OrderByDescending(w => w.CreatedAt)
+                .OrderBy(w => w.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -304,7 +304,7 @@ namespace TeamTrack.Services
                 .Include(w => w.AssignedTo)
                 .Include(w => w.CreatedBy)
                 .Where(w => w.AssignedToUserId == userId)
-                .OrderByDescending(w => w.CreatedAt)
+                 .OrderBy(w => w.CreatedAt)   // Ascending
                 .ToListAsync();
 
             var parentIds = items.Where(w => w.ParentId.HasValue).Select(w => w.ParentId!.Value).Distinct().ToList();
@@ -346,7 +346,7 @@ namespace TeamTrack.Services
 
             var totalCount = await query.CountAsync();
             var items = await query
-                .OrderByDescending(w => w.CreatedAt)
+                .OrderBy(w => w.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -754,7 +754,7 @@ namespace TeamTrack.Services
                 .Include(w => w.AssignedTo)
                 .Include(w => w.CreatedBy)
                 .Where(w => involvedWorkItemIds.Contains(w.Id) && w.AssignedToUserId != userId)
-                .OrderByDescending(w => w.UpdatedAt)
+                .OrderBy(w => w.UpdatedAt)
                 .ToListAsync();
 
             var parentIds = items.Where(w => w.ParentId.HasValue).Select(w => w.ParentId!.Value).Distinct().ToList();
@@ -767,7 +767,7 @@ namespace TeamTrack.Services
         {
             var employees = await _userRepo.Query()
                 .Where(u => u.UserType == "Employee")
-                .OrderByDescending(u => u.CreatedAt)
+                .OrderBy(u => u.CreatedAt)
                 .ToListAsync();
 
             return employees.Select(e => new EmployeeFullDto
