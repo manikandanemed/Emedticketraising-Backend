@@ -70,7 +70,7 @@ namespace TeamTrack.Services
 
             // Employee-wise workitem count (excluding bugs to match their dashboard)
             var employees = await _userRepo.Query()
-                .Where(u => u.UserType == "Employee" && u.IsActive)
+                .Where(u => (u.UserType == "Employee" || u.UserType == "Both") && u.IsActive)
                 .ToListAsync();
 
             var allNotes = await _noteRepo.Query()

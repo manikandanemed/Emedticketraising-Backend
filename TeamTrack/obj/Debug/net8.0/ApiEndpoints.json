@@ -91,6 +91,22 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.AuthController",
+    "Method": "SwitchRole",
+    "RelativePath": "api/Auth/switch-role",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.SwitchRoleRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.AuthController",
     "Method": "UpdateEmail",
     "RelativePath": "api/Auth/update-email",
     "HttpMethod": "PUT",
@@ -100,6 +116,22 @@
       {
         "Name": "request",
         "Type": "TeamTrack.DTOs.UpdateEmailRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.AuthController",
+    "Method": "VerifyOtp",
+    "RelativePath": "api/Auth/verify-otp",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.VerifyOtpRequestDto",
         "IsRequired": true
       }
     ],

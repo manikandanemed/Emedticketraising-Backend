@@ -23,16 +23,51 @@ namespace TeamTrack.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
-            if (string.IsNullOrEmpty(request.UserType) ||
-                string.IsNullOrEmpty(request.UserName) ||
+            if (string.IsNullOrEmpty(request.UserName) ||
                 string.IsNullOrEmpty(request.Password))
                 return BadRequest(ApiResponse<string>.FailureResponse("All fields are required"));
 
-            var result = await _authService.LoginAsync(request);
+            var result = await _authService.LoginStep1Async(request);
             if (result == null)
                 return Unauthorized(ApiResponse<string>.FailureResponse("Invalid credentials"));
 
+            return Ok(ApiResponse<LoginStep1ResultDto>.SuccessResponse(result, "OTP sent to your email"));
+        }
+
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.UserType) ||
+                string.IsNullOrEmpty(request.UserName) ||
+                string.IsNullOrEmpty(request.Otp))
+                return BadRequest(ApiResponse<string>.FailureResponse("Username, OTP and User Type are required"));
+
+            var result = await _authService.VerifyOtpAsync(request);
+            if (result == null)
+                return BadRequest(ApiResponse<string>.FailureResponse("Invalid or expired OTP"));
+
             return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(result, "Login successful"));
+        }
+
+        [HttpPost("switch-role")]
+        [Authorize]
+        public async Task<IActionResult> SwitchRole([FromBody] SwitchRoleRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.TargetRole))
+                return BadRequest(ApiResponse<string>.FailureResponse("Target role is required"));
+
+            if (request.TargetRole != "Employee" && request.TargetRole != "ProductManager")
+                return BadRequest(ApiResponse<string>.FailureResponse("Invalid target role"));
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized(ApiResponse<string>.FailureResponse("Unauthorized"));
+            int userId = int.Parse(userIdClaim.Value);
+
+            var result = await _authService.SwitchRoleAsync(userId, request.TargetRole);
+            if (result == null)
+                return BadRequest(ApiResponse<string>.FailureResponse("Role switch not allowed for this user"));
+
+            return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(result, "Role switched successfully"));
         }
 
         [HttpPost("register/employee")]

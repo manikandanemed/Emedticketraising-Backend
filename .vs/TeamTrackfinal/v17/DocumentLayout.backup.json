@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|d:\\myfirstconsoleapp\\emedticket- back and frontend\\ticketraising-backend\\teamtrack\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|solutionrelative:teamtrack\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|d:\\myfirstconsoleapp\\emedticket- back and frontend\\ticketraising-backend\\teamtrack\\services\\projectservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|solutionrelative:teamtrack\\services\\projectservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -17,10 +21,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|d:\\myfirstconsoleapp\\emedticket- back and frontend\\ticketraising-backend\\teamtrack\\migrations\\20260706082901_initialmigration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|solutionrelative:teamtrack\\migrations\\20260706082901_initialmigration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|d:\\myfirstconsoleapp\\emedticket- back and frontend\\ticketraising-backend\\teamtrack\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|solutionrelative:teamtrack\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{1058218F-F163-444B-9EB9-29193F4A15AF}|TeamTrack\\TeamTrack.csproj|d:\\myfirstconsoleapp\\emedticket- back and frontend\\ticketraising-backend\\teamtrack\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -130,44 +130,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 19,
+          "SelectedChildIndex": 5,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "20260706082901_InitialMigration.cs",
-              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
-              "RelativeDocumentMoniker": "TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
-              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
-              "RelativeToolTip": "TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-06T08:29:02.069Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "CommentService.cs",
-              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\CommentService.cs",
-              "RelativeDocumentMoniker": "TeamTrack\\Services\\CommentService.cs",
-              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\CommentService.cs",
-              "RelativeToolTip": "TeamTrack\\Services\\CommentService.cs",
-              "ViewState": "AgIAADAAAAAAAAAAAAAcwEcAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-27T09:22:04.889Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "ICommentService.cs",
-              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ICommentService.cs",
-              "RelativeDocumentMoniker": "TeamTrack\\Services\\ICommentService.cs",
-              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ICommentService.cs",
-              "RelativeToolTip": "TeamTrack\\Services\\ICommentService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-27T09:21:24.926Z"
-            },
             {
               "$type": "Document",
               "DocumentIndex": 15,
@@ -215,6 +179,67 @@
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-27T09:16:48.625Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ProjectService.cs",
+              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ProjectService.cs",
+              "RelativeDocumentMoniker": "TeamTrack\\Services\\ProjectService.cs",
+              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ProjectService.cs",
+              "RelativeToolTip": "TeamTrack\\Services\\ProjectService.cs",
+              "ViewState": "AgIAALUBAAAAAAAAAAAuwDsBAAA8AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-27T05:57:11.103Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\appsettings.json",
+              "RelativeDocumentMoniker": "TeamTrack\\appsettings.json",
+              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\appsettings.json",
+              "RelativeToolTip": "TeamTrack\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-06-27T04:49:39.892Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "ICommentService.cs",
+              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ICommentService.cs",
+              "RelativeDocumentMoniker": "TeamTrack\\Services\\ICommentService.cs",
+              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ICommentService.cs",
+              "RelativeToolTip": "TeamTrack\\Services\\ICommentService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-27T09:21:24.926Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "CommentService.cs",
+              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\CommentService.cs",
+              "RelativeDocumentMoniker": "TeamTrack\\Services\\CommentService.cs",
+              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\CommentService.cs",
+              "RelativeToolTip": "TeamTrack\\Services\\CommentService.cs",
+              "ViewState": "AgIAADAAAAAAAAAAAAAcwEcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-27T09:22:04.889Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "20260706082901_InitialMigration.cs",
+              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
+              "RelativeDocumentMoniker": "TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
+              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
+              "RelativeToolTip": "TeamTrack\\Migrations\\20260706082901_InitialMigration.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-06T08:29:02.069Z"
             },
             {
               "$type": "Document",
@@ -350,7 +375,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "ProjectController.cs",
               "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Controllers\\ProjectController.cs",
               "RelativeDocumentMoniker": "TeamTrack\\Controllers\\ProjectController.cs",
@@ -362,20 +387,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ProjectService.cs",
-              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ProjectService.cs",
-              "RelativeDocumentMoniker": "TeamTrack\\Services\\ProjectService.cs",
-              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\ProjectService.cs",
-              "RelativeToolTip": "TeamTrack\\Services\\ProjectService.cs",
-              "ViewState": "AgIAAEwBAAAAAAAAAAAiwDsBAAA8AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-27T05:57:11.103Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "IProjectService.cs",
               "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Services\\IProjectService.cs",
               "RelativeDocumentMoniker": "TeamTrack\\Services\\IProjectService.cs",
@@ -480,18 +492,6 @@
               "ViewState": "AgIAAFQAAAAAAAAAAAAswGsAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-27T05:01:15.201Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "appsettings.json",
-              "DocumentMoniker": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\appsettings.json",
-              "RelativeDocumentMoniker": "TeamTrack\\appsettings.json",
-              "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\appsettings.json",
-              "RelativeToolTip": "TeamTrack\\appsettings.json",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAwwAwAAAAlAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-06-27T04:49:39.892Z"
             }
           ]
         }

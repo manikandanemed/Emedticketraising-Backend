@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Caching.Memory;
 using TeamTrack.DTOs;
 using TeamTrack.Models;
 using TeamTrack.Repositories;
@@ -12,31 +13,113 @@ namespace TeamTrack.Services
     {
         private readonly IRepository<User> _userRepo;
         private readonly IConfiguration _config;
+        private readonly IMemoryCache _cache;
+        private readonly IEmailService _emailService;
 
-        public AuthService(IRepository<User> userRepo, IConfiguration config)
+        public AuthService(IRepository<User> userRepo, IConfiguration config, IMemoryCache cache, IEmailService emailService)
         {
             _userRepo = userRepo;
             _config = config;
+            _cache = cache;
+            _emailService = emailService;
         }
 
-        public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
+        public async Task<LoginStep1ResultDto?> LoginStep1Async(LoginRequestDto request)
         {
-            var user = await _userRepo.GetAsync(u => u.Email.ToLower() == request.UserName.ToLower() && u.UserType == request.UserType && u.IsActive);
+            var user = await _userRepo.GetAsync(u => u.Email.ToLower() == request.UserName.ToLower() && u.IsActive);
             if (user == null) return null;
 
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 return null;
 
-            var token = GenerateJwtToken(user);
+            // Generate a random 6 digit OTP
+            var random = new Random();
+            var otp = random.Next(100000, 999999).ToString();
+
+            // Store in Memory Cache for 10 minutes
+            var cacheKey = $"OTP_{user.Email.ToLower()}";
+            _cache.Set(cacheKey, otp, TimeSpan.FromMinutes(10));
+
+            // Send OTP via email
+            var subject = "Your OTP for Emedticket Verification";
+            var body = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 500px;'>
+                    <h2 style='color: #0078d4;'>Emedlogix Solutions</h2>
+                    <p>Dear {user.Name},</p>
+                    <p>You requested to log into the Emedticket Portal. Please use the following One-Time Password (OTP) to complete your login. This OTP is valid for 10 minutes.</p>
+                    <div style='background-color: #f3f2f1; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; border-radius: 5px;'>
+                        {otp}
+                    </div>
+                    <p style='color: #666; font-size: 12px;'>If you did not request this, please ignore this email or contact support.</p>
+                </div>";
+
+            await _emailService.SendEmailAsync(user.Email, subject, body);
+
+            var roles = new List<string>();
+            if (user.UserType == "Both")
+            {
+                roles.Add("ProductManager");
+                roles.Add("Employee");
+            }
+            else
+            {
+                roles.Add(user.UserType);
+            }
+
+            return new LoginStep1ResultDto
+            {
+                OtpRequired = true,
+                Email = user.Email,
+                Roles = roles
+            };
+        }
+
+        public async Task<LoginResponseDto?> VerifyOtpAsync(VerifyOtpRequestDto request)
+        {
+            var cacheKey = $"OTP_{request.UserName.ToLower()}";
+            if (!_cache.TryGetValue(cacheKey, out string? cachedOtp))
+            {
+                return null; // OTP expired or not found
+            }
+
+            if (cachedOtp != request.Otp)
+            {
+                return null; // Incorrect OTP
+            }
+
+            // OTP verified, remove from cache
+            _cache.Remove(cacheKey);
+
+            var user = await _userRepo.GetAsync(u => u.Email.ToLower() == request.UserName.ToLower() && u.IsActive);
+            if (user == null) return null;
+
+            if (user.UserType != "Both" && user.UserType != request.UserType)
+            {
+                return null;
+            }
+
+            var token = GenerateJwtToken(user, request.UserType);
+
+            var roles = new List<string>();
+            if (user.UserType == "Both")
+            {
+                roles.Add("ProductManager");
+                roles.Add("Employee");
+            }
+            else
+            {
+                roles.Add(user.UserType);
+            }
 
             return new LoginResponseDto
             {
                 Token = token,
-                UserType = user.UserType,
+                UserType = request.UserType,
                 Name = user.Name,
                 UserId = user.Id,
                 Email = user.Email,
-                ProfilePicture = user.ProfilePicture
+                ProfilePicture = user.ProfilePicture,
+                Roles = roles
             };
         }
 
@@ -99,7 +182,7 @@ namespace TeamTrack.Services
             };
         }
 
-        private string GenerateJwtToken(User user)
+        private string GenerateJwtToken(User user, string selectedRole)
         {
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
@@ -108,10 +191,10 @@ namespace TeamTrack.Services
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Role, user.UserType),
+                new Claim(ClaimTypes.Role, selectedRole),
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Name, user.Name),
-                new Claim("role", user.UserType)
+                new Claim("role", selectedRole)
             };
 
             var token = new JwtSecurityToken(
@@ -127,12 +210,47 @@ namespace TeamTrack.Services
 
         public async Task<bool> DeactivateEmployeeAsync(int userId)
         {
-            var user = await _userRepo.GetAsync(u => u.Id == userId && u.UserType == "Employee");
+            var user = await _userRepo.GetAsync(u => u.Id == userId && (u.UserType == "Employee" || u.UserType == "Both"));
             if (user == null) return false;
 
             user.IsActive = false;
             await _userRepo.SaveAsync();
             return true;
+        }
+
+        public async Task<LoginResponseDto?> SwitchRoleAsync(int userId, string targetRole)
+        {
+            var user = await _userRepo.GetAsync(u => u.Id == userId && u.IsActive);
+            if (user == null) return null;
+
+            if (user.UserType != "Both" && user.UserType != targetRole)
+            {
+                return null;
+            }
+
+            var token = GenerateJwtToken(user, targetRole);
+
+            var roles = new List<string>();
+            if (user.UserType == "Both")
+            {
+                roles.Add("ProductManager");
+                roles.Add("Employee");
+            }
+            else
+            {
+                roles.Add(user.UserType);
+            }
+
+            return new LoginResponseDto
+            {
+                Token = token,
+                UserType = targetRole,
+                Name = user.Name,
+                UserId = user.Id,
+                Email = user.Email,
+                ProfilePicture = user.ProfilePicture,
+                Roles = roles
+            };
         }
 
         public async Task<bool> ResetPasswordAsync(int userId, string currentPassword, string newPassword)

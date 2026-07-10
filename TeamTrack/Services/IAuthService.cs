@@ -4,11 +4,13 @@ namespace TeamTrack.Services
 {
     public interface IAuthService
     {
-        Task<LoginResponseDto?> LoginAsync(LoginRequestDto request);
+        Task<LoginStep1ResultDto?> LoginStep1Async(LoginRequestDto request);
+        Task<LoginResponseDto?> VerifyOtpAsync(VerifyOtpRequestDto request);
         Task<RegisterResponseDto?> RegisterEmployeeAsync(RegisterRequestDto request);
         Task<RegisterResponseDto?> RegisterProductManagerAsync(RegisterRequestDto request);
         Task<bool> DeactivateEmployeeAsync(int userId);
         Task<bool> ResetPasswordAsync(int userId, string currentPassword, string newPassword);
         Task<bool> AdminResetPasswordAsync(int employeeId, string newPassword);
+        Task<LoginResponseDto?> SwitchRoleAsync(int userId, string targetRole);
     }
 }

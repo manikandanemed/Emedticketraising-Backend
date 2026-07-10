@@ -29,7 +29,7 @@ namespace TeamTrack.Controllers
             }
 
             // Verify employee exists
-            var employeeExists = await _context.Users.AnyAsync(u => u.Id == employeeId && u.UserType == "Employee");
+            var employeeExists = await _context.Users.AnyAsync(u => u.Id == employeeId && (u.UserType == "Employee" || u.UserType == "Both"));
             if (!employeeExists)
             {
                 return NotFound(ApiResponse<object>.FailureResponse("Employee not found."));

@@ -47,6 +47,8 @@ builder.Services.AddCors(options =>
 
 
 // Dependency Injection
+builder.Services.AddMemoryCache();
+builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();

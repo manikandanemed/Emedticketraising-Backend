@@ -366,7 +366,7 @@ namespace TeamTrack.Services
         public async Task<List<EmployeeDropdownDto>> GetAllEmployeesAsync()
         {
             var employees = await _userRepo.Query()
-                .Where(u => u.UserType == "Employee" && u.IsActive)
+                .Where(u => (u.UserType == "Employee" || u.UserType == "Both") && u.IsActive)
                 .OrderBy(u => u.Name)
                 .ToListAsync();
 
@@ -492,7 +492,7 @@ namespace TeamTrack.Services
             if (workItem == null) return null;
 
             var userObj = byUserId > 0 ? await _userRepo.GetAsync(u => u.Id == byUserId) : null;
-            var isPM = userObj?.UserType == "ProductManager";
+            var isPM = userObj?.UserType == "ProductManager" || userObj?.UserType == "Both";
 
             // Enforce developer lock lock-out
             if (workItem.DeveloperBillLock && !isPM)
@@ -766,7 +766,7 @@ namespace TeamTrack.Services
         public async Task<List<EmployeeFullDto>> GetAllEmployeesFullAsync()
         {
             var employees = await _userRepo.Query()
-                .Where(u => u.UserType == "Employee")
+                .Where(u => u.UserType == "Employee" || u.UserType == "Both")
                 .OrderBy(u => u.CreatedAt)
                 .ToListAsync();
 
