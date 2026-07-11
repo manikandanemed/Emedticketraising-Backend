@@ -70,6 +70,32 @@ namespace TeamTrack.Controllers
             return Ok(ApiResponse<LoginResponseDto>.SuccessResponse(result, "Role switched successfully"));
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+                return BadRequest(ApiResponse<string>.FailureResponse("Email is required"));
+
+            var success = await _authService.ForgotPasswordAsync(request.Email);
+            if (!success)
+                return BadRequest(ApiResponse<string>.FailureResponse("User not found or inactive"));
+
+            return Ok(ApiResponse<string>.SuccessResponse("Success", "Reset verification code sent to your email"));
+        }
+
+        [HttpPost("reset-password-otp")]
+        public async Task<IActionResult> ResetPasswordWithOtp([FromBody] ResetPasswordWithOtpRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Otp) || string.IsNullOrEmpty(request.NewPassword))
+                return BadRequest(ApiResponse<string>.FailureResponse("Email, OTP and New Password are required"));
+
+            var success = await _authService.ResetPasswordWithOtpAsync(request.Email, request.Otp, request.NewPassword);
+            if (!success)
+                return BadRequest(ApiResponse<string>.FailureResponse("Invalid or expired OTP"));
+
+            return Ok(ApiResponse<string>.SuccessResponse("Success", "Password has been reset successfully"));
+        }
+
         [HttpPost("register/employee")]
         public async Task<IActionResult> RegisterEmployee([FromBody] RegisterRequestDto request)
         {

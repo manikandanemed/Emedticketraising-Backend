@@ -275,5 +275,58 @@ namespace TeamTrack.Services
             await _userRepo.SaveAsync();
             return true;
         }
+
+        public async Task<bool> ForgotPasswordAsync(string email)
+        {
+            var user = await _userRepo.GetAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
+            if (user == null) return false;
+
+            // Generate a random 6 digit OTP
+            var random = new Random();
+            var otp = random.Next(100000, 999999).ToString();
+
+            // Store in Memory Cache for 10 minutes
+            var cacheKey = $"RESET_OTP_{user.Email.ToLower()}";
+            _cache.Set(cacheKey, otp, TimeSpan.FromMinutes(10));
+
+            // Send OTP via email
+            var subject = "Password Reset Verification Code - Emedticket";
+            var body = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 500px;'>
+                    <h2 style='color: #0078d4;'>Emedlogix Solutions</h2>
+                    <p>Dear {user.Name},</p>
+                    <p>We received a request to reset the password for your Emedticket account. Please use the following One-Time Password (OTP) code to verify your identity. This OTP is valid for 10 minutes.</p>
+                    <div style='background-color: #f3f2f1; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; border-radius: 5px;'>
+                        {otp}
+                    </div>
+                    <p style='color: #666; font-size: 12px;'>If you did not request a password reset, please ignore this email.</p>
+                </div>";
+
+            await _emailService.SendEmailAsync(user.Email, subject, body);
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordWithOtpAsync(string email, string otp, string newPassword)
+        {
+            var user = await _userRepo.GetAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
+            if (user == null) return false;
+
+            var cacheKey = $"RESET_OTP_{user.Email.ToLower()}";
+            if (!_cache.TryGetValue(cacheKey, out string? cachedOtp))
+            {
+                return false; // Expired or not requested
+            }
+
+            if (cachedOtp != otp)
+            {
+                return false; // Incorrect OTP
+            }
+
+            // OTP verified, remove from cache and update password
+            _cache.Remove(cacheKey);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _userRepo.SaveAsync();
+            return true;
+        }
     }
 }

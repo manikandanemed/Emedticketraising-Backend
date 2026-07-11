@@ -1,6 +1,22 @@
 [
   {
     "ContainingType": "TeamTrack.Controllers.AuthController",
+    "Method": "ForgotPassword",
+    "RelativePath": "api/Auth/forgot-password",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.ForgotPasswordRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.AuthController",
     "Method": "Login",
     "RelativePath": "api/Auth/login",
     "HttpMethod": "POST",
@@ -84,6 +100,22 @@
       {
         "Name": "request",
         "Type": "TeamTrack.DTOs.ResetPasswordRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.AuthController",
+    "Method": "ResetPasswordWithOtp",
+    "RelativePath": "api/Auth/reset-password-otp",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.ResetPasswordWithOtpRequestDto",
         "IsRequired": true
       }
     ],

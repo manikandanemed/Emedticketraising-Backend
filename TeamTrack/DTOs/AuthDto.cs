@@ -56,6 +56,18 @@ namespace TeamTrack.DTOs
         public string TargetRole { get; set; } = string.Empty;
     }
 
+    public class ForgotPasswordRequestDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordWithOtpRequestDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Otp { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
     public class UpdateEmailRequestDto
     {
         public string NewEmail { get; set; } = string.Empty;

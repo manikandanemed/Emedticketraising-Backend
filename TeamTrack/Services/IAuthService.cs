@@ -12,5 +12,7 @@ namespace TeamTrack.Services
         Task<bool> ResetPasswordAsync(int userId, string currentPassword, string newPassword);
         Task<bool> AdminResetPasswordAsync(int employeeId, string newPassword);
         Task<LoginResponseDto?> SwitchRoleAsync(int userId, string targetRole);
+        Task<bool> ForgotPasswordAsync(string email);
+        Task<bool> ResetPasswordWithOtpAsync(string email, string otp, string newPassword);
     }
 }
