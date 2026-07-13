@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using TeamTrack.DTOs;
 using TeamTrack.Models;
 using TeamTrack.Repositories;
@@ -15,13 +16,15 @@ namespace TeamTrack.Services
         private readonly IConfiguration _config;
         private readonly IMemoryCache _cache;
         private readonly IEmailService _emailService;
+        private readonly IRepository<UserOtp> _otpRepo;
 
-        public AuthService(IRepository<User> userRepo, IConfiguration config, IMemoryCache cache, IEmailService emailService)
+        public AuthService(IRepository<User> userRepo, IConfiguration config, IMemoryCache cache, IEmailService emailService, IRepository<UserOtp> otpRepo)
         {
             _userRepo = userRepo;
             _config = config;
             _cache = cache;
             _emailService = emailService;
+            _otpRepo = otpRepo;
         }
 
         public async Task<LoginStep1ResultDto?> LoginStep1Async(LoginRequestDto request)
@@ -36,9 +39,25 @@ namespace TeamTrack.Services
             var random = new Random();
             var otp = random.Next(100000, 999999).ToString();
 
-            // Store in Memory Cache for 10 minutes
-            var cacheKey = $"OTP_{user.Email.ToLower()}";
-            _cache.Set(cacheKey, otp, TimeSpan.FromMinutes(10));
+            // Store in DB for 10 minutes
+            var existingOtps = await _otpRepo.Query()
+                .Where(o => o.Email.ToLower() == user.Email.ToLower() && o.Purpose == "Login")
+                .ToListAsync();
+            foreach (var oldOtp in existingOtps)
+            {
+                _otpRepo.Remove(oldOtp);
+            }
+
+            var userOtp = new UserOtp
+            {
+                Email = user.Email.ToLower(),
+                OtpCode = otp,
+                Purpose = "Login",
+                ExpiryTime = DateTime.UtcNow.AddMinutes(10),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _otpRepo.AddAsync(userOtp);
+            await _otpRepo.SaveAsync();
 
             // Send OTP via email
             var subject = "Your OTP for Emedticket Verification";
@@ -76,19 +95,20 @@ namespace TeamTrack.Services
 
         public async Task<LoginResponseDto?> VerifyOtpAsync(VerifyOtpRequestDto request)
         {
-            var cacheKey = $"OTP_{request.UserName.ToLower()}";
-            if (!_cache.TryGetValue(cacheKey, out string? cachedOtp))
+            var cachedOtp = await _otpRepo.GetAsync(o => o.Email.ToLower() == request.UserName.ToLower() && o.Purpose == "Login" && o.ExpiryTime > DateTime.UtcNow);
+            if (cachedOtp == null)
             {
                 return null; // OTP expired or not found
             }
 
-            if (cachedOtp != request.Otp)
+            if (cachedOtp.OtpCode != request.Otp)
             {
                 return null; // Incorrect OTP
             }
 
-            // OTP verified, remove from cache
-            _cache.Remove(cacheKey);
+            // OTP verified, remove from DB
+            _otpRepo.Remove(cachedOtp);
+            await _otpRepo.SaveAsync();
 
             var user = await _userRepo.GetAsync(u => u.Email.ToLower() == request.UserName.ToLower() && u.IsActive);
             if (user == null) return null;
@@ -179,6 +199,35 @@ namespace TeamTrack.Services
                 Email = user.Email,
                 UserType = user.UserType,
                 Message = "Product Manager registered successfully"
+            };
+        }
+
+        public async Task<RegisterResponseDto?> CreateUserAsync(RegisterRequestDto request)
+        {
+            var exists = await _userRepo.GetAsync(u => u.Email.ToLower() == request.Email.ToLower());
+            if (exists != null) return null;
+
+            var user = new User
+            {
+                Name = request.Name,
+                Email = request.Email.ToLower(),
+                Mobile = request.Mobile,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                UserType = request.UserType,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepo.AddAsync(user);
+            await _userRepo.SaveAsync();
+
+            return new RegisterResponseDto
+            {
+                UserId = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                UserType = user.UserType,
+                Message = "User registered successfully"
             };
         }
 
@@ -285,9 +334,25 @@ namespace TeamTrack.Services
             var random = new Random();
             var otp = random.Next(100000, 999999).ToString();
 
-            // Store in Memory Cache for 10 minutes
-            var cacheKey = $"RESET_OTP_{user.Email.ToLower()}";
-            _cache.Set(cacheKey, otp, TimeSpan.FromMinutes(10));
+            // Store in DB for 10 minutes
+            var existingOtps = await _otpRepo.Query()
+                .Where(o => o.Email.ToLower() == user.Email.ToLower() && o.Purpose == "ResetPassword")
+                .ToListAsync();
+            foreach (var oldOtp in existingOtps)
+            {
+                _otpRepo.Remove(oldOtp);
+            }
+
+            var userOtp = new UserOtp
+            {
+                Email = user.Email.ToLower(),
+                OtpCode = otp,
+                Purpose = "ResetPassword",
+                ExpiryTime = DateTime.UtcNow.AddMinutes(10),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _otpRepo.AddAsync(userOtp);
+            await _otpRepo.SaveAsync();
 
             // Send OTP via email
             var subject = "Password Reset Verification Code - Emedticket";
@@ -311,19 +376,21 @@ namespace TeamTrack.Services
             var user = await _userRepo.GetAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
             if (user == null) return false;
 
-            var cacheKey = $"RESET_OTP_{user.Email.ToLower()}";
-            if (!_cache.TryGetValue(cacheKey, out string? cachedOtp))
+            var cachedOtp = await _otpRepo.GetAsync(o => o.Email.ToLower() == email.ToLower() && o.Purpose == "ResetPassword" && o.ExpiryTime > DateTime.UtcNow);
+            if (cachedOtp == null)
             {
                 return false; // Expired or not requested
             }
 
-            if (cachedOtp != otp)
+            if (cachedOtp.OtpCode != otp)
             {
                 return false; // Incorrect OTP
             }
 
-            // OTP verified, remove from cache and update password
-            _cache.Remove(cacheKey);
+            // OTP verified, remove from DB
+            _otpRepo.Remove(cachedOtp);
+            await _otpRepo.SaveAsync();
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             await _userRepo.SaveAsync();
             return true;

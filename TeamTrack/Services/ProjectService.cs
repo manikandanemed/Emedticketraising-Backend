@@ -766,7 +766,6 @@ namespace TeamTrack.Services
         public async Task<List<EmployeeFullDto>> GetAllEmployeesFullAsync()
         {
             var employees = await _userRepo.Query()
-                .Where(u => u.UserType == "Employee" || u.UserType == "Both")
                 .OrderBy(u => u.CreatedAt)
                 .ToListAsync();
 
@@ -777,7 +776,8 @@ namespace TeamTrack.Services
                 Email = e.Email,
                 Mobile = e.Mobile,
                 IsActive = e.IsActive,
-                CreatedAt = e.CreatedAt
+                CreatedAt = e.CreatedAt,
+                UserType = e.UserType
             }).ToList();
         }
 

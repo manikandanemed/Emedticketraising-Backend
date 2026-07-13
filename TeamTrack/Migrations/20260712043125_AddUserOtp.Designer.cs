@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TeamTrack.Data;
@@ -11,9 +12,11 @@ using TeamTrack.Data;
 namespace TeamTrack.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260712043125_AddUserOtp")]
+    partial class AddUserOtp
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -466,10 +469,6 @@ namespace TeamTrack.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("assigned_to_user_id");
 
-                    b.Property<int?>("BuildId")
-                        .HasColumnType("integer")
-                        .HasColumnName("build_id");
-
                     b.Property<string>("Category")
                         .HasColumnType("text")
                         .HasColumnName("category");
@@ -490,10 +489,6 @@ namespace TeamTrack.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("priority");
-
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer")
-                        .HasColumnName("project_id");
 
                     b.Property<int>("RaisedByUserId")
                         .HasColumnType("integer")
@@ -529,10 +524,6 @@ namespace TeamTrack.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedToUserId");
-
-                    b.HasIndex("BuildId");
-
-                    b.HasIndex("ProjectId");
 
                     b.HasIndex("RaisedByUserId");
 
@@ -976,17 +967,6 @@ namespace TeamTrack.Migrations
                         .HasForeignKey("AssignedToUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("TeamTrack.Models.SoftwareBuild", "Build")
-                        .WithMany()
-                        .HasForeignKey("BuildId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("TeamTrack.Models.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("TeamTrack.Models.User", "RaisedBy")
                         .WithMany("RaisedTickets")
                         .HasForeignKey("RaisedByUserId")
@@ -994,10 +974,6 @@ namespace TeamTrack.Migrations
                         .IsRequired();
 
                     b.Navigation("AssignedTo");
-
-                    b.Navigation("Build");
-
-                    b.Navigation("Project");
 
                     b.Navigation("RaisedBy");
                 });

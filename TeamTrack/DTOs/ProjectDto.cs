@@ -121,6 +121,7 @@ namespace TeamTrack.DTOs
         public string? Mobile { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string UserType { get; set; } = string.Empty;
     }
 
     public class UpdateProjectMembersRequestDto

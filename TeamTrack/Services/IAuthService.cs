@@ -8,6 +8,7 @@ namespace TeamTrack.Services
         Task<LoginResponseDto?> VerifyOtpAsync(VerifyOtpRequestDto request);
         Task<RegisterResponseDto?> RegisterEmployeeAsync(RegisterRequestDto request);
         Task<RegisterResponseDto?> RegisterProductManagerAsync(RegisterRequestDto request);
+        Task<RegisterResponseDto?> CreateUserAsync(RegisterRequestDto request);
         Task<bool> DeactivateEmployeeAsync(int userId);
         Task<bool> ResetPasswordAsync(int userId, string currentPassword, string newPassword);
         Task<bool> AdminResetPasswordAsync(int employeeId, string newPassword);

@@ -96,6 +96,27 @@ namespace TeamTrack.Controllers
             return Ok(ApiResponse<string>.SuccessResponse("Success", "Password has been reset successfully"));
         }
 
+        [HttpPost("register")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> CreateUser([FromBody] RegisterRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.Name) ||
+                string.IsNullOrEmpty(request.Email) ||
+                string.IsNullOrEmpty(request.Password))
+                return BadRequest(ApiResponse<string>.FailureResponse("Name, Email and Password are required"));
+
+            if (request.UserType != "Employee" && request.UserType != "ProductManager" && request.UserType != "Both")
+            {
+                return BadRequest(ApiResponse<string>.FailureResponse("Invalid UserType role selected"));
+            }
+
+            var result = await _authService.CreateUserAsync(request);
+            if (result == null)
+                return Conflict(ApiResponse<string>.FailureResponse("Email already exists"));
+
+            return Ok(ApiResponse<RegisterResponseDto>.SuccessResponse(result, "User registered successfully"));
+        }
+
         [HttpPost("register/employee")]
         public async Task<IActionResult> RegisterEmployee([FromBody] RegisterRequestDto request)
         {

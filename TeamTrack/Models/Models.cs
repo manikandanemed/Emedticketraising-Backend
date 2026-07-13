@@ -27,16 +27,20 @@ namespace TeamTrack.Models
         public string? Category { get; set; }
         public string Priority { get; set; } = "medium"; // low, medium, high, critical
         public string Status { get; set; } = "open"; // open, in_progress, resolved, closed
+        public int ProjectId { get; set; }
         public int RaisedByUserId { get; set; }
         public int? AssignedToUserId { get; set; }
+        public int? BuildId { get; set; }
         public bool WhatsappNotify { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ResolvedAt { get; set; }
         public DateTime? ClosedAt { get; set; }
 
+        public Project? Project { get; set; }
         public User? RaisedBy { get; set; }
         public User? AssignedTo { get; set; }
+        public SoftwareBuild? Build { get; set; }
         public ICollection<Comment> Comments { get; set; } = [];
     }
 
@@ -177,5 +181,15 @@ namespace TeamTrack.Models
         public User? FromUser { get; set; }
         public User? ToUser { get; set; }
         public User? ByUser { get; set; }
+    }
+
+    public class UserOtp
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+        public string Purpose { get; set; } = string.Empty; // Login or ResetPassword
+        public DateTime ExpiryTime { get; set; } = DateTime.UtcNow.AddMinutes(10);
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

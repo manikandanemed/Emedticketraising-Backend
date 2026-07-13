@@ -20,6 +20,7 @@ namespace TeamTrack.Data
         public DbSet<Module> Modules => Set<Module>();
         public DbSet<SoftwareBuild> SoftwareBuilds => Set<SoftwareBuild>();
         public DbSet<WorkItemActivityLog> WorkItemActivityLogs => Set<WorkItemActivityLog>();
+        public DbSet<UserOtp> UserOtps => Set<UserOtp>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,14 +51,21 @@ namespace TeamTrack.Data
                 entity.Property(t => t.Category).HasColumnName("category");
                 entity.Property(t => t.Priority).HasColumnName("priority");
                 entity.Property(t => t.Status).HasColumnName("status");
+                entity.Property(t => t.ProjectId).HasColumnName("project_id");
                 entity.Property(t => t.RaisedByUserId).HasColumnName("raised_by_user_id");
                 entity.Property(t => t.AssignedToUserId).HasColumnName("assigned_to_user_id");
+                entity.Property(t => t.BuildId).HasColumnName("build_id");
                 entity.Property(t => t.WhatsappNotify).HasColumnName("whatsapp_notify");
                 entity.Property(t => t.CreatedAt).HasColumnName("created_at");
                 entity.Property(t => t.UpdatedAt).HasColumnName("updated_at");
                 entity.Property(t => t.ResolvedAt).HasColumnName("resolved_at");
                 entity.Property(t => t.ClosedAt).HasColumnName("closed_at");
                 entity.HasIndex(t => t.TicketNumber).IsUnique();
+
+                entity.HasOne(t => t.Project)
+                      .WithMany()
+                      .HasForeignKey(t => t.ProjectId)
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(t => t.RaisedBy)
                       .WithMany(u => u.RaisedTickets)
@@ -67,6 +75,11 @@ namespace TeamTrack.Data
                 entity.HasOne(t => t.AssignedTo)
                       .WithMany(u => u.AssignedTickets)
                       .HasForeignKey(t => t.AssignedToUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(t => t.Build)
+                      .WithMany()
+                      .HasForeignKey(t => t.BuildId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
@@ -363,6 +376,18 @@ namespace TeamTrack.Data
                       .WithMany()
                       .HasForeignKey(a => a.ToUserId)
                       .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<UserOtp>(entity =>
+            {
+                entity.ToTable("user_otps");
+                entity.HasKey(o => o.Id);
+                entity.Property(o => o.Id).HasColumnName("id");
+                entity.Property(o => o.Email).HasColumnName("email");
+                entity.Property(o => o.OtpCode).HasColumnName("otp_code");
+                entity.Property(o => o.Purpose).HasColumnName("purpose");
+                entity.Property(o => o.ExpiryTime).HasColumnName("expiry_time");
+                entity.Property(o => o.CreatedAt).HasColumnName("created_at");
             });
         }
     }

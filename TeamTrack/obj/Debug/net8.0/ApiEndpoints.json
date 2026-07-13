@@ -59,6 +59,22 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.AuthController",
+    "Method": "CreateUser",
+    "RelativePath": "api/Auth/register",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.RegisterRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.AuthController",
     "Method": "RegisterEmployee",
     "RelativePath": "api/Auth/register/employee",
     "HttpMethod": "POST",
