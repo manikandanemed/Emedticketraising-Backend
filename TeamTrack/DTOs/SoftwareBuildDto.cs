@@ -17,4 +17,11 @@ namespace TeamTrack.DTOs
         public string BuildNumber { get; set; } = string.Empty;
         public int ProjectId { get; set; }
     }
+
+    public class UpdateSoftwareBuildRequestDto
+    {
+        public string BuildNumber { get; set; } = string.Empty;
+        public int ProjectId { get; set; }
+        public bool IsActive { get; set; }
+    }
 }

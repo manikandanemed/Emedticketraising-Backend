@@ -141,4 +141,12 @@ namespace TeamTrack.DTOs
         public string? Note { get; set; }
         public DateTime Timestamp { get; set; }
     }
+
+    public class UpdateProjectRequestDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string Status { get; set; } = "active";
+        public int? ClientId { get; set; }
+    }
 }

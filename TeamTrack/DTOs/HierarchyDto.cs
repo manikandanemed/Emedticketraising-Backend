@@ -53,4 +53,24 @@ namespace TeamTrack.DTOs
         public string? Description { get; set; }
         public int ProductId { get; set; }
     }
+
+    public class UpdateClientRequestDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+
+    public class UpdateProductRequestDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int ProjectId { get; set; }
+    }
+
+    public class UpdateModuleRequestDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int ProductId { get; set; }
+    }
 }

@@ -35,6 +35,7 @@ namespace TeamTrack.Services
         Task<bool> DeleteProjectAsync(int projectId);
         Task<List<EmployeeFullDto>> GetAllEmployeesFullAsync();
         Task<ProjectResponseDto?> UpdateProjectMembersAsync(int projectId, UpdateProjectMembersRequestDto request);
+        Task<ProjectResponseDto?> UpdateProjectAsync(int projectId, UpdateProjectRequestDto request);
         Task<List<WorkItemActivityLogDto>> GetWorkItemActivityAsync(int workItemId);
         Task<List<WorkItemResponseDto>> GetInvolvedWorkItemsAsync(int userId);
     }

@@ -24,6 +24,13 @@ namespace TeamTrack.Services
 
         public async Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto request, int userId)
         {
+            var nameExists = await _projectRepo.Query()
+                .AnyAsync(p => p.Name.ToLower() == request.Name.Trim().ToLower());
+            if (nameExists)
+            {
+                throw new Exception("A project with this name already exists.");
+            }
+
             // Generate short prefix from project name (e.g. "Sigichai" → "SIG")
             var nameLetters = new string(request.Name.Where(char.IsLetter).ToArray());
             var rawPrefix = nameLetters.Length >= 3 ? nameLetters.Substring(0, 3).ToUpper() : nameLetters.ToUpper().PadRight(3, 'X');
@@ -800,6 +807,33 @@ namespace TeamTrack.Services
             }
 
             project.UpdatedAt = DateTime.UtcNow;
+            await _projectRepo.SaveAsync();
+
+            return MapProjectToDto(project);
+        }
+
+        public async Task<ProjectResponseDto?> UpdateProjectAsync(int projectId, UpdateProjectRequestDto request)
+        {
+            var project = await _projectRepo.Query()
+                .Include(p => p.AssignedEmployees)
+                .Include(p => p.Client)
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+
+            if (project == null) return null;
+
+            var nameExists = await _projectRepo.Query()
+                .AnyAsync(p => p.Id != projectId && p.Name.ToLower() == request.Name.Trim().ToLower());
+            if (nameExists)
+            {
+                throw new Exception("A project with this name already exists.");
+            }
+
+            project.Name = request.Name;
+            project.Description = request.Description;
+            project.Status = request.Status;
+            project.ClientId = request.ClientId;
+            project.UpdatedAt = DateTime.UtcNow;
+
             await _projectRepo.SaveAsync();
 
             return MapProjectToDto(project);

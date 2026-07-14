@@ -91,6 +91,20 @@ namespace TeamTrack.Controllers
             return Ok(ApiResponse<ProjectResponseDto>.SuccessResponse(result, "Project members updated successfully"));
         }
 
+        [HttpPut("{projectId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> UpdateProject(int projectId, [FromBody] UpdateProjectRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.Name))
+                return BadRequest(ApiResponse<string>.FailureResponse("Project name is required"));
+
+            var result = await _projectService.UpdateProjectAsync(projectId, request);
+            if (result == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Project not found"));
+
+            return Ok(ApiResponse<ProjectResponseDto>.SuccessResponse(result, "Project updated successfully"));
+        }
+
         // ==================== WORK ITEMS ====================
 
         [HttpPost("{projectId}/workitems")]
@@ -879,6 +893,169 @@ namespace TeamTrack.Controllers
             await moduleRepo.SaveAsync();
 
             return Ok(ApiResponse<string>.SuccessResponse("Module deleted successfully", "Module deleted successfully"));
+        }
+
+        [HttpPut("clients/{clientId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> UpdateClient(int clientId, [FromBody] UpdateClientRequestDto request, [FromServices] IRepository<Client> clientRepo)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest(ApiResponse<string>.FailureResponse("Client name is required"));
+
+            var client = await clientRepo.GetAsync(c => c.Id == clientId);
+            if (client == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Client not found"));
+
+            var exists = await clientRepo.Query().AnyAsync(c => c.Id != clientId && c.Name.ToLower() == request.Name.Trim().ToLower());
+            if (exists)
+                return BadRequest(ApiResponse<string>.FailureResponse("Client name already exists"));
+
+            client.Name = request.Name.Trim();
+            client.Description = request.Description?.Trim();
+            client.UpdatedAt = DateTime.UtcNow;
+
+            await clientRepo.SaveAsync();
+
+            var dto = new ClientDto
+            {
+                Id = client.Id,
+                ClientNumber = client.ClientNumber,
+                Name = client.Name,
+                Description = client.Description,
+                CreatedAt = client.CreatedAt
+            };
+
+            return Ok(ApiResponse<ClientDto>.SuccessResponse(dto, "Client updated successfully"));
+        }
+
+        [HttpPut("products/{productId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> UpdateProduct(int productId, [FromBody] UpdateProductRequestDto request, [FromServices] IRepository<Product> productRepo, [FromServices] IRepository<Project> projectRepo)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest(ApiResponse<string>.FailureResponse("Product name is required"));
+
+            var product = await productRepo.GetAsync(p => p.Id == productId);
+            if (product == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Product not found"));
+
+            var projectExists = await projectRepo.Query().AnyAsync(p => p.Id == request.ProjectId);
+            if (!projectExists)
+                return NotFound(ApiResponse<string>.FailureResponse("Project not found"));
+
+            var exists = await productRepo.Query().AnyAsync(p => p.Id != productId && p.ProjectId == request.ProjectId && p.Name.ToLower() == request.Name.Trim().ToLower());
+            if (exists)
+                return BadRequest(ApiResponse<string>.FailureResponse("Product name already exists for this project"));
+
+            product.Name = request.Name.Trim();
+            product.Description = request.Description?.Trim();
+            product.ProjectId = request.ProjectId;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            await productRepo.SaveAsync();
+
+            var created = await productRepo.Query()
+                .Include(p => p.Project)
+                .FirstOrDefaultAsync(p => p.Id == product.Id);
+
+            var dto = new ProductDto
+            {
+                Id = created!.Id,
+                ProductNumber = created.ProductNumber,
+                Name = created.Name,
+                Description = created.Description,
+                ProjectId = created.ProjectId,
+                ProjectName = created.Project?.Name ?? string.Empty,
+                CreatedAt = created.CreatedAt
+            };
+
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(dto, "Product updated successfully"));
+        }
+
+        [HttpPut("modules/{moduleId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> UpdateModule(int moduleId, [FromBody] UpdateModuleRequestDto request, [FromServices] IRepository<Module> moduleRepo, [FromServices] IRepository<Product> productRepo)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest(ApiResponse<string>.FailureResponse("Module name is required"));
+
+            var module = await moduleRepo.GetAsync(m => m.Id == moduleId);
+            if (module == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Module not found"));
+
+            var productExists = await productRepo.Query().AnyAsync(p => p.Id == request.ProductId);
+            if (!productExists)
+                return NotFound(ApiResponse<string>.FailureResponse("Product not found"));
+
+            var exists = await moduleRepo.Query().AnyAsync(m => m.Id != moduleId && m.ProductId == request.ProductId && m.Name.ToLower() == request.Name.Trim().ToLower());
+            if (exists)
+                return BadRequest(ApiResponse<string>.FailureResponse("Module name already exists for this product"));
+
+            module.Name = request.Name.Trim();
+            module.Description = request.Description?.Trim();
+            module.ProductId = request.ProductId;
+            module.UpdatedAt = DateTime.UtcNow;
+
+            await moduleRepo.SaveAsync();
+
+            var created = await moduleRepo.Query()
+                .Include(m => m.Product)
+                .FirstOrDefaultAsync(m => m.Id == module.Id);
+
+            var dto = new ModuleDto
+            {
+                Id = created!.Id,
+                ModuleNumber = created.ModuleNumber,
+                Name = created.Name,
+                Description = created.Description,
+                ProductId = created.ProductId,
+                ProductName = created.Product?.Name ?? string.Empty,
+                CreatedAt = created.CreatedAt
+            };
+
+            return Ok(ApiResponse<ModuleDto>.SuccessResponse(dto, "Module updated successfully"));
+        }
+
+        [HttpPut("builds/{buildId}")]
+        [Authorize(Roles = "ProductManager")]
+        public async Task<IActionResult> UpdateBuild(int buildId, [FromBody] UpdateSoftwareBuildRequestDto request, [FromServices] IRepository<SoftwareBuild> buildRepo, [FromServices] IRepository<Project> projectRepo)
+        {
+            if (string.IsNullOrWhiteSpace(request.BuildNumber))
+                return BadRequest(ApiResponse<string>.FailureResponse("Build number is required"));
+
+            var build = await buildRepo.GetAsync(b => b.Id == buildId);
+            if (build == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Build not found"));
+
+            var projectExists = await projectRepo.Query().AnyAsync(p => p.Id == request.ProjectId);
+            if (!projectExists)
+                return NotFound(ApiResponse<string>.FailureResponse("Project not found"));
+
+            var exists = await buildRepo.Query().AnyAsync(b => b.Id != buildId && b.ProjectId == request.ProjectId && b.BuildNumber.ToLower() == request.BuildNumber.Trim().ToLower());
+            if (exists)
+                return BadRequest(ApiResponse<string>.FailureResponse("Build number already exists for this project"));
+
+            build.BuildNumber = request.BuildNumber.Trim();
+            build.ProjectId = request.ProjectId;
+            build.IsActive = request.IsActive;
+
+            await buildRepo.SaveAsync();
+
+            var created = await buildRepo.Query()
+                .Include(b => b.Project)
+                .FirstOrDefaultAsync(b => b.Id == build.Id);
+
+            var dto = new SoftwareBuildDto
+            {
+                Id = created!.Id,
+                BuildNumber = created.BuildNumber,
+                ProjectId = created.ProjectId,
+                ProjectName = created.Project?.Name ?? string.Empty,
+                IsActive = created.IsActive,
+                CreatedAt = created.CreatedAt
+            };
+
+            return Ok(ApiResponse<SoftwareBuildDto>.SuccessResponse(dto, "Build updated successfully"));
         }
     }
 
