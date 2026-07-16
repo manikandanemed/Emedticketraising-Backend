@@ -12,14 +12,16 @@ namespace TeamTrack.Services
         private readonly IRepository<User> _userRepo;
         private readonly IRepository<Bug> _bugRepo;
         private readonly IRepository<WorkItemActivityLog> _activityRepo;
+        private readonly IRepository<Product> _productRepo;
 
-        public ProjectService(IRepository<Project> projectRepo, IRepository<WorkItem> workItemRepo, IRepository<User> userRepo, IRepository<Bug> bugRepo, IRepository<WorkItemActivityLog> activityRepo)
+        public ProjectService(IRepository<Project> projectRepo, IRepository<WorkItem> workItemRepo, IRepository<User> userRepo, IRepository<Bug> bugRepo, IRepository<WorkItemActivityLog> activityRepo, IRepository<Product> productRepo)
         {
             _projectRepo = projectRepo;
             _workItemRepo = workItemRepo;
             _userRepo = userRepo;
             _bugRepo = bugRepo;
             _activityRepo = activityRepo;
+            _productRepo = productRepo;
         }
 
         public async Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto request, int userId)
@@ -63,6 +65,18 @@ namespace TeamTrack.Services
             await _projectRepo.AddAsync(project);
             await _projectRepo.SaveAsync();
 
+            var product = new Product
+            {
+                ProductNumber = $"PRD-{project.ProjectNumber}",
+                Name = project.Name,
+                Description = project.Description ?? "Auto-generated product for project",
+                ProjectId = project.Id,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _productRepo.AddAsync(product);
+            await _productRepo.SaveAsync();
+
             var created = await _projectRepo.Query()
                 .Include(p => p.CreatedBy)
                 .Include(p => p.AssignedEmployees)
@@ -97,6 +111,8 @@ namespace TeamTrack.Services
             return projects.Select(MapProjectToDto).ToList();
         }
 
+     
+
         public async Task<PagedResult<ProjectResponseDto>> GetAllProjectsPagedAsync(int userId, string userRole, int page, int pageSize, string? search)
         {
             var query = _projectRepo.Query()
@@ -111,9 +127,15 @@ namespace TeamTrack.Services
                 query = query.Where(p => p.AssignedEmployees.Any(e => e.Id == userId));
 
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(p => p.Name.Contains(search) || p.ProjectNumber.Contains(search));
+            {
+                var searchLower = search.ToLower();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(searchLower) ||
+                    p.ProjectNumber.ToLower().Contains(searchLower));
+            }
 
             var totalCount = await query.CountAsync();
+
             var items = await query
                 .OrderBy(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
@@ -122,10 +144,10 @@ namespace TeamTrack.Services
 
             return new PagedResult<ProjectResponseDto>
             {
-                Items     = items.Select(MapProjectToDto).ToList(),
+                Items = items.Select(MapProjectToDto).ToList(),
                 TotalCount = totalCount,
-                Page      = page,
-                PageSize  = pageSize
+                Page = page,
+                PageSize = pageSize
             };
         }
 
@@ -189,7 +211,9 @@ namespace TeamTrack.Services
                 DueDate = request.DueDate.HasValue ? DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc) : null,
                 FixedBillNumber = request.FixedBillNumber,
                 RaisedBillNumber = request.RaisedBillNumber,
-                DeveloperBillLock = request.DeveloperBillLock
+                DeveloperBillLock = request.DeveloperBillLock,
+                RaisedBuild = request.RaisedBuild,
+                FixedBuild = request.FixedBuild
             };
 
             await _workItemRepo.AddAsync(workItem);
@@ -223,6 +247,8 @@ namespace TeamTrack.Services
                     AssignedToUserId = workItem.AssignedToUserId,
                     Severity = request.Severity,
                     IssueType = request.IssueType ?? "New",
+                    RaisedBuild = request.RaisedBuild,
+                    FixedBuild = request.FixedBuild,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -320,7 +346,7 @@ namespace TeamTrack.Services
             return items.Select(w => MapWorkItemToDto(w, parents)).ToList();
         }
 
-        public async Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search, string? workType = null)
+        public async Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search, string? workType = null, string? priority = null)
         {
             var query = _workItemRepo.Query()
                 .Include(w => w.Project)
@@ -340,6 +366,9 @@ namespace TeamTrack.Services
 
             if (!string.IsNullOrWhiteSpace(workType) && workType != "all")
                 query = query.Where(w => w.WorkType.ToLower() == workType.ToLower());
+
+            if (!string.IsNullOrWhiteSpace(priority) && priority != "all")
+                query = query.Where(w => w.Priority.ToLower() == priority.ToLower());
 
             if (!string.IsNullOrWhiteSpace(dueDate) && DateOnly.TryParse(dueDate, out var parsedDate))
             {
@@ -445,7 +474,10 @@ namespace TeamTrack.Services
                 AssignedToUserId = w.AssignedToUserId,
                 FixedBillNumber = w.FixedBillNumber,
                 RaisedBillNumber = w.RaisedBillNumber,
-                DeveloperBillLock = w.DeveloperBillLock
+                DeveloperBillLock = w.DeveloperBillLock,
+                CreatedByUserId = w.CreatedByUserId,
+                RaisedBuild = w.RaisedBuild,
+                FixedBuild = w.FixedBuild
             };
 
             if (w.ParentId.HasValue)
@@ -470,13 +502,16 @@ namespace TeamTrack.Services
                 }
             }
 
-            if (w.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase))
+            var linkedBug = _bugRepo.Query().FirstOrDefault(b => b.WorkItemId == w.Id);
+            if (linkedBug != null)
             {
-                var linkedBug = _bugRepo.Query().FirstOrDefault(b => b.WorkItemId == w.Id);
-                if (linkedBug != null)
-                {
-                    dto.Severity = linkedBug.Severity;
-                }
+                dto.Severity = linkedBug.Severity;
+                dto.IssueType = linkedBug.IssueType;
+                // Only override build info from Bug if Bug has values (don't wipe WorkItem's own build data)
+                if (!string.IsNullOrEmpty(linkedBug.RaisedBuild))
+                    dto.RaisedBuild = linkedBug.RaisedBuild;
+                if (!string.IsNullOrEmpty(linkedBug.FixedBuild))
+                    dto.FixedBuild = linkedBug.FixedBuild;
             }
 
             return dto;
@@ -533,8 +568,26 @@ namespace TeamTrack.Services
             workItem.Status = request.Status;
             workItem.UpdatedAt = DateTime.UtcNow;
 
+            // Always save FixedBuild on the WorkItem itself for ALL work types
+            if (!string.IsNullOrEmpty(request.FixedBuild))
+            {
+                workItem.FixedBuild = request.FixedBuild;
+            }
+
             if (request.Status == "completed" || request.Status == "fixed")
                 workItem.CompletedAt = DateTime.UtcNow;
+
+            // Also sync FixedBuild to the linked Bug record if this is a Bug type
+            if (workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(request.FixedBuild))
+            {
+                var bug = await _bugRepo.GetAsync(b => b.WorkItemId == workItem.Id);
+                if (bug != null)
+                {
+                    bug.FixedBuild = request.FixedBuild;
+                    bug.UpdatedAt = DateTime.UtcNow;
+                    await _bugRepo.SaveAsync();
+                }
+            }
 
             await _workItemRepo.SaveAsync();
 
@@ -835,6 +888,15 @@ namespace TeamTrack.Services
             project.UpdatedAt = DateTime.UtcNow;
 
             await _projectRepo.SaveAsync();
+
+            var product = await _productRepo.GetAsync(p => p.ProjectId == projectId);
+            if (product != null)
+            {
+                product.Name = request.Name;
+                product.Description = request.Description ?? "Auto-generated product for project";
+                product.UpdatedAt = DateTime.UtcNow;
+                await _productRepo.SaveAsync();
+            }
 
             return MapProjectToDto(project);
         }

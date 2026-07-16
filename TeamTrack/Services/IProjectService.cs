@@ -22,7 +22,7 @@ namespace TeamTrack.Services
         Task<List<WorkItemResponseDto>> GetWorkItemsByProjectAsync(int projectId);
 
         // Paginated employee work items
-        Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search, string? workType = null);
+        Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByEmployeePagedAsync(int userId, int page, int pageSize, string? status, string? dueDate, string? search, string? workType = null, string? priority = null);
 
         // Non-paged (kept for backward compatibility if needed)
         Task<List<WorkItemResponseDto>> GetWorkItemsByEmployeeAsync(int userId);

@@ -45,6 +45,8 @@ namespace TeamTrack.DTOs
         public string? FixedBillNumber { get; set; }
         public string? RaisedBillNumber { get; set; }
         public bool DeveloperBillLock { get; set; } = false;
+        public string? RaisedBuild { get; set; }
+        public string? FixedBuild { get; set; }
     }
 
     public class WorkItemResponseDto
@@ -86,6 +88,9 @@ namespace TeamTrack.DTOs
         public string? FixedBillNumber { get; set; }
         public string? RaisedBillNumber { get; set; }
         public bool DeveloperBillLock { get; set; }
+        public int CreatedByUserId { get; set; }
+        public string? RaisedBuild { get; set; }
+        public string? FixedBuild { get; set; }
     }
 
     public class UpdateWorkItemDueDateRequestDto
@@ -106,6 +111,7 @@ namespace TeamTrack.DTOs
         public string? FixedBillNumber { get; set; }
         public string? RaisedBillNumber { get; set; }
         public bool? DeveloperBillLock { get; set; }
+        public string? FixedBuild { get; set; }
     }
 
     public class ReassignWorkItemRequestDto

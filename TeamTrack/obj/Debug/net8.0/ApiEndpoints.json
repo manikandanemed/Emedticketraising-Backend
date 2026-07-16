@@ -471,6 +471,27 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "UpdateBuild",
+    "RelativePath": "api/Project/builds/{buildId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "buildId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.UpdateSoftwareBuildRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "GetClients",
     "RelativePath": "api/Project/clients",
     "HttpMethod": "GET",
@@ -506,6 +527,27 @@
       {
         "Name": "clientId",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "UpdateClient",
+    "RelativePath": "api/Project/clients/{clientId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "clientId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.UpdateClientRequestDto",
         "IsRequired": true
       }
     ],
@@ -616,6 +658,27 @@
       {
         "Name": "moduleId",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "UpdateModule",
+    "RelativePath": "api/Project/modules/{moduleId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "moduleId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.UpdateModuleRequestDto",
         "IsRequired": true
       }
     ],
@@ -750,6 +813,27 @@
   },
   {
     "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "UpdateProduct",
+    "RelativePath": "api/Project/products/{productId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "productId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.UpdateProductRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
     "Method": "GetModules",
     "RelativePath": "api/Project/products/{productId}/modules",
     "HttpMethod": "GET",
@@ -758,6 +842,43 @@
     "Parameters": [
       {
         "Name": "productId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "UpdateWorkItem",
+    "RelativePath": "api/Project/workitems/{workItemId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "workItemId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "TeamTrack.DTOs.CreateWorkItemRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TeamTrack.Controllers.ProjectController",
+    "Method": "DeleteWorkItem",
+    "RelativePath": "api/Project/workitems/{workItemId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "workItemId",
         "Type": "System.Int32",
         "IsRequired": true
       }
@@ -1096,6 +1217,11 @@
       },
       {
         "Name": "workType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "priority",
         "Type": "System.String",
         "IsRequired": false
       }

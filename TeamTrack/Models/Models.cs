@@ -102,6 +102,8 @@ namespace TeamTrack.Models
         public string? FixedBillNumber { get; set; }
         public string? RaisedBillNumber { get; set; }
         public bool DeveloperBillLock { get; set; } = false;
+        public string? RaisedBuild { get; set; }
+        public string? FixedBuild { get; set; }
 
         public Project? Project { get; set; }
         public Module? Module { get; set; }

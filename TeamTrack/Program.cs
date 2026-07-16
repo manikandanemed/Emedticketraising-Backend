@@ -219,30 +219,6 @@ using (var scope = app.Services.CreateScope())
             SET client_id = (SELECT id FROM clients WHERE client_number = 'CLT-001')
             WHERE client_id IS NULL;
 
-            -- For each Project, create a 'Default Product' if it has no products
-            INSERT INTO products (product_number, name, description, project_id, created_at, updated_at)
-            SELECT 
-                'PRD-' || LPAD(((SELECT COUNT(*) FROM products)::integer + ROW_NUMBER() OVER(ORDER BY id)::integer)::text, 3, '0'),
-                'Default Product', 
-                'Default Product', 
-                id, 
-                now(), 
-                now()
-            FROM projects p
-            WHERE NOT EXISTS (SELECT 1 FROM products prd WHERE prd.project_id = p.id);
-
-            -- For each Product, create a 'Default Module' if it has no modules
-            INSERT INTO modules (module_number, name, description, product_id, created_at, updated_at)
-            SELECT 
-                'MDL-' || LPAD(((SELECT COUNT(*) FROM modules)::integer + ROW_NUMBER() OVER(ORDER BY id)::integer)::text, 3, '0'),
-                'Default Module', 
-                'Default Module', 
-                id, 
-                now(), 
-                now()
-            FROM products prd
-            WHERE NOT EXISTS (SELECT 1 FROM modules m WHERE m.product_id = prd.id);
-
             -- Update existing WorkItems that have NULL module_id to their project's default Module
             UPDATE work_items wi
             SET module_id = (

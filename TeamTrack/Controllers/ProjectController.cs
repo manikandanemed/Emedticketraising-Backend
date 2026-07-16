@@ -165,10 +165,11 @@ namespace TeamTrack.Controllers
             [FromQuery] string? status = null,
             [FromQuery] string? dueDate = null,
             [FromQuery] string? search = null,
-            [FromQuery] string? workType = null)
+            [FromQuery] string? workType = null,
+            [FromQuery] string? priority = null)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _projectService.GetWorkItemsByEmployeePagedAsync(userId, page, pageSize, status, dueDate, search, workType);
+            var result = await _projectService.GetWorkItemsByEmployeePagedAsync(userId, page, pageSize, status, dueDate, search, workType, priority);
             return Ok(ApiResponse<PagedResult<WorkItemResponseDto>>.SuccessResponse(result, "Work items fetched successfully"));
         }
 
@@ -261,12 +262,41 @@ namespace TeamTrack.Controllers
 
         [HttpPut("workitems/{workItemId}/status")]
         [Authorize(Roles = "Employee,ProductManager")]
-        public async Task<IActionResult> UpdateWorkItemStatus(int workItemId, [FromBody] UpdateWorkItemStatusRequestDto request)
+        public async Task<IActionResult> UpdateWorkItemStatus(
+            int workItemId,
+            [FromBody] UpdateWorkItemStatusRequestDto request,
+            [FromServices] IRepository<SoftwareBuild> buildRepo,
+            [FromServices] IRepository<WorkItem> workItemRepo)
         {
             if (string.IsNullOrEmpty(request.Status))
                 return BadRequest(ApiResponse<string>.FailureResponse("Status is required"));
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            // Auto-save custom FixedBuild to software_builds table if not already present
+            if (!string.IsNullOrWhiteSpace(request.FixedBuild))
+            {
+                var workItem = await workItemRepo.GetAsync(w => w.Id == workItemId);
+                if (workItem != null)
+                {
+                    var alreadyExists = await buildRepo.Query()
+                        .AnyAsync(b => b.ProjectId == workItem.ProjectId &&
+                                       b.BuildNumber.ToLower() == request.FixedBuild.Trim().ToLower());
+                    if (!alreadyExists)
+                    {
+                        var newBuild = new SoftwareBuild
+                        {
+                            BuildNumber = request.FixedBuild.Trim(),
+                            ProjectId = workItem.ProjectId,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await buildRepo.AddAsync(newBuild);
+                        await buildRepo.SaveAsync();
+                    }
+                }
+            }
+
             var result = await _projectService.UpdateWorkItemStatusAsync(workItemId, request, userId);
             if (result == null)
                 return NotFound(ApiResponse<string>.FailureResponse("WorkItem not found"));
@@ -303,6 +333,102 @@ namespace TeamTrack.Controllers
                 return NotFound(ApiResponse<string>.FailureResponse("WorkItem not found"));
 
             return Ok(ApiResponse<WorkItemResponseDto>.SuccessResponse(result, "WorkItem due date updated successfully"));
+        }
+
+        [HttpPut("workitems/{workItemId}")]
+        [Authorize(Roles = "Employee,ProductManager")]
+        public async Task<IActionResult> UpdateWorkItem(int workItemId, [FromBody] CreateWorkItemRequestDto request, [FromServices] IRepository<WorkItem> workItemRepo)
+        {
+            if (string.IsNullOrEmpty(request.Title))
+                return BadRequest(ApiResponse<string>.FailureResponse("Title is required"));
+
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var workItem = await workItemRepo.GetAsync(w => w.Id == workItemId);
+            if (workItem == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Task not found"));
+
+            if (workItem.CreatedByUserId != userId)
+                return StatusCode(403, ApiResponse<string>.FailureResponse("Only the creator of this task can edit it"));
+
+            workItem.Title = request.Title.Trim();
+            workItem.Description = request.Description?.Trim();
+            workItem.Priority = request.Priority;
+            workItem.ModuleId = request.ModuleId;
+            workItem.StartDate = request.StartDate;
+            workItem.DueDate = request.DueDate;
+            workItem.Labels = request.Labels;
+            workItem.Team = request.Team;
+            workItem.ParentId = request.ParentId;
+            workItem.EpicName = request.EpicName;
+            workItem.EpicColor = request.EpicColor;
+            workItem.RaisedBuild = request.RaisedBuild;
+            workItem.FixedBuild = request.FixedBuild;
+            workItem.AssignedToUserId = request.AssignedToUserId;
+            workItem.AttachmentUrls = request.AttachmentUrls ?? workItem.AttachmentUrls;
+            workItem.FixedBillNumber = request.FixedBillNumber ?? workItem.FixedBillNumber;
+            workItem.RaisedBillNumber = request.RaisedBillNumber ?? workItem.RaisedBillNumber;
+            if (request.DeveloperBillLock) workItem.DeveloperBillLock = request.DeveloperBillLock;
+            workItem.UpdatedAt = DateTime.UtcNow;
+
+            await workItemRepo.SaveAsync();
+
+            var bugRepo = HttpContext.RequestServices.GetRequiredService<IRepository<Bug>>();
+            var bug = await bugRepo.GetAsync(b => b.WorkItemId == workItemId);
+            if (bug != null)
+            {
+                bug.Title = workItem.Title;
+                bug.Description = workItem.Description;
+                bug.Severity = request.Severity ?? bug.Severity;
+                bug.IssueType = request.IssueType ?? bug.IssueType;
+                bug.RaisedBuild = request.RaisedBuild;
+                bug.FixedBuild = request.FixedBuild;
+                bug.UpdatedAt = DateTime.UtcNow;
+                await bugRepo.SaveAsync();
+            }
+            else if (!string.IsNullOrEmpty(request.RaisedBuild) || !string.IsNullOrEmpty(request.FixedBuild))
+            {
+                bug = new Bug
+                {
+                    BugNumber = workItem.WorkNumber,
+                    Title = workItem.Title,
+                    Description = workItem.Description,
+                    Status = "New",
+                    WorkItemId = workItem.Id,
+                    RaisedByUserId = userId,
+                    AssignedToUserId = workItem.AssignedToUserId,
+                    Severity = request.Severity ?? "3",
+                    IssueType = request.IssueType ?? "New",
+                    RaisedBuild = request.RaisedBuild,
+                    FixedBuild = request.FixedBuild,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await bugRepo.AddAsync(bug);
+                await bugRepo.SaveAsync();
+            }
+
+            var result = await _projectService.GetWorkItemByIdAsync(workItemId);
+            return Ok(ApiResponse<WorkItemResponseDto>.SuccessResponse(result!, "Task updated successfully"));
+        }
+
+        [HttpDelete("workitems/{workItemId}")]
+        [Authorize(Roles = "Employee,ProductManager")]
+        public async Task<IActionResult> DeleteWorkItem(int workItemId, [FromServices] IRepository<WorkItem> workItemRepo)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var workItem = await workItemRepo.GetAsync(w => w.Id == workItemId);
+            if (workItem == null)
+                return NotFound(ApiResponse<string>.FailureResponse("Task not found"));
+
+            if (workItem.CreatedByUserId != userId)
+                return StatusCode(403, ApiResponse<string>.FailureResponse("Only the creator of this task can delete it"));
+
+            workItemRepo.Remove(workItem);
+            await workItemRepo.SaveAsync();
+
+            return Ok(ApiResponse<string>.SuccessResponse("Deleted", "Task deleted successfully"));
         }
 
         // ==================== COMMENTS ====================
