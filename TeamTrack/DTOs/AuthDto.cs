@@ -79,6 +79,20 @@ namespace TeamTrack.DTOs
         public bool OtpRequired { get; set; }
         public string Email { get; set; } = string.Empty;
         public List<string> Roles { get; set; } = new();
+
+        // True for OTP-exempt accounts that hold more than one role ("Both").
+        // The frontend must still show the role picker (no OTP box) and call
+        // verify-otp with the chosen role to finish logging in.
+        public bool RoleSelectionRequired { get; set; }
+
+        // Populated only when OtpRequired is false AND RoleSelectionRequired is false
+        // (single-role OTP-exempt account) so the frontend can log the user straight in
+        // without a separate verify-otp call.
+        public string? Token { get; set; }
+        public string? UserType { get; set; }
+        public string? Name { get; set; }
+        public int? UserId { get; set; }
+        public string? ProfilePicture { get; set; }
     }
 
     public class VerifyOtpRequestDto

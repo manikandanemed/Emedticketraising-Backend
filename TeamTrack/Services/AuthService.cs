@@ -35,6 +35,50 @@ namespace TeamTrack.Services
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 return null;
 
+            var roles = new List<string>();
+            if (user.UserType == "Both")
+            {
+                roles.Add("ProductManager");
+                roles.Add("Employee");
+            }
+            else
+            {
+                roles.Add(user.UserType);
+            }
+
+            // OTP-exempt accounts (configured in appsettings under "OtpExemptEmails")
+            // skip the email OTP step entirely.
+            var otpExemptEmails = _config.GetSection("OtpExemptEmails").Get<string[]>() ?? Array.Empty<string>();
+            var isOtpExempt = otpExemptEmails.Any(e => string.Equals(e, user.Email, StringComparison.OrdinalIgnoreCase));
+            if (isOtpExempt)
+            {
+                if (roles.Count > 1)
+                {
+                    // "Both" role account: still needs to choose a role, just without an OTP.
+                    // Frontend shows the role picker and calls verify-otp (OTP check is skipped there too).
+                    return new LoginStep1ResultDto
+                    {
+                        OtpRequired = false,
+                        RoleSelectionRequired = true,
+                        Email = user.Email,
+                        Roles = roles
+                    };
+                }
+
+                var token = GenerateJwtToken(user, roles[0]);
+                return new LoginStep1ResultDto
+                {
+                    OtpRequired = false,
+                    Email = user.Email,
+                    Roles = roles,
+                    Token = token,
+                    UserType = roles[0],
+                    Name = user.Name,
+                    UserId = user.Id,
+                    ProfilePicture = user.ProfilePicture
+                };
+            }
+
             // Generate a random 6 digit OTP
             var random = new Random();
             var otp = random.Next(100000, 999999).ToString();
@@ -74,17 +118,6 @@ namespace TeamTrack.Services
 
             await _emailService.SendEmailAsync(user.Email, subject, body);
 
-            var roles = new List<string>();
-            if (user.UserType == "Both")
-            {
-                roles.Add("ProductManager");
-                roles.Add("Employee");
-            }
-            else
-            {
-                roles.Add(user.UserType);
-            }
-
             return new LoginStep1ResultDto
             {
                 OtpRequired = true,
@@ -95,20 +128,26 @@ namespace TeamTrack.Services
 
         public async Task<LoginResponseDto?> VerifyOtpAsync(VerifyOtpRequestDto request)
         {
-            var cachedOtp = await _otpRepo.GetAsync(o => o.Email.ToLower() == request.UserName.ToLower() && o.Purpose == "Login" && o.ExpiryTime > DateTime.UtcNow);
-            if (cachedOtp == null)
-            {
-                return null; // OTP expired or not found
-            }
+            var otpExemptEmails = _config.GetSection("OtpExemptEmails").Get<string[]>() ?? Array.Empty<string>();
+            var isOtpExempt = otpExemptEmails.Any(e => string.Equals(e, request.UserName, StringComparison.OrdinalIgnoreCase));
 
-            if (cachedOtp.OtpCode != request.Otp)
+            if (!isOtpExempt)
             {
-                return null; // Incorrect OTP
-            }
+                var cachedOtp = await _otpRepo.GetAsync(o => o.Email.ToLower() == request.UserName.ToLower() && o.Purpose == "Login" && o.ExpiryTime > DateTime.UtcNow);
+                if (cachedOtp == null)
+                {
+                    return null; // OTP expired or not found
+                }
 
-            // OTP verified, remove from DB
-            _otpRepo.Remove(cachedOtp);
-            await _otpRepo.SaveAsync();
+                if (cachedOtp.OtpCode != request.Otp)
+                {
+                    return null; // Incorrect OTP
+                }
+
+                // OTP verified, remove from DB
+                _otpRepo.Remove(cachedOtp);
+                await _otpRepo.SaveAsync();
+            }
 
             var user = await _userRepo.GetAsync(u => u.Email.ToLower() == request.UserName.ToLower() && u.IsActive);
             if (user == null) return null;

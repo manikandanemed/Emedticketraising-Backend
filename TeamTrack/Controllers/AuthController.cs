@@ -31,7 +31,8 @@ namespace TeamTrack.Controllers
             if (result == null)
                 return Unauthorized(ApiResponse<string>.FailureResponse("Invalid credentials"));
 
-            return Ok(ApiResponse<LoginStep1ResultDto>.SuccessResponse(result, "OTP sent to your email"));
+            var message = result.OtpRequired ? "OTP sent to your email" : "Login successful";
+            return Ok(ApiResponse<LoginStep1ResultDto>.SuccessResponse(result, message));
         }
 
         [HttpPost("verify-otp")]
