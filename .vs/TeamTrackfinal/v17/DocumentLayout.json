@@ -224,7 +224,7 @@
               "RelativeDocumentMoniker": "TeamTrack\\Data\\AppDbContext.cs",
               "ToolTip": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\Data\\AppDbContext.cs",
               "RelativeToolTip": "TeamTrack\\Data\\AppDbContext.cs",
-              "ViewState": "AgIAAJEAAAAAAAAAAAAmwK4AAAAPAAAAAAAAAA==",
+              "ViewState": "AgIAAJ4AAAAAAAAAAAAAwK4AAAAPAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-27T05:02:03.129Z",
               "EditorCaption": ""
@@ -311,8 +311,7 @@
               "RelativeToolTip": "TeamTrack\\appsettings.json",
               "ViewState": "AgIAAA0AAAAAAAAAAAAAABoAAAAGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-06-27T04:49:39.892Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-27T04:49:39.892Z"
             },
             {
               "$type": "Document",

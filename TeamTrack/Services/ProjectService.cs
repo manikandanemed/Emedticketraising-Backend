@@ -268,8 +268,15 @@ namespace TeamTrack.Services
             return MapWorkItemToDto(created!);
         }
 
-        public async Task<List<WorkItemResponseDto>> GetWorkItemsByProjectAsync(int projectId)
+        public async Task<List<WorkItemResponseDto>?> GetWorkItemsByProjectAsync(int projectId, int userId, string userRole)
         {
+            if (userRole != "ProductManager")
+            {
+                var hasAccess = await _projectRepo.Query()
+                    .AnyAsync(p => p.Id == projectId && p.AssignedEmployees.Any(e => e.Id == userId));
+                if (!hasAccess) return null;
+            }
+
             var items = await _workItemRepo.Query()
                 .Include(w => w.Project)
                     .ThenInclude(p => p.Client)

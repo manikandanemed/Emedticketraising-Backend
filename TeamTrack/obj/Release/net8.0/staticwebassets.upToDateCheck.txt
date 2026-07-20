@@ -23,3 +23,4 @@ wwwroot\uploads\screenshots\754b6c2f-390a-4c03-aa8a-b40202b77768.png
 wwwroot\uploads\screenshots\787cca42-d495-4c54-a678-7b6e4fd89014.jpeg
 wwwroot\uploads\screenshots\814f91dc-2b34-4b9c-9e7d-c25e0399ed66.jpeg
 wwwroot\uploads\screenshots\c73c5eec-7c01-48b1-9383-925587c41da1.jpeg
+wwwroot\uploads\profile_photos\profile_user_1_639198913244584480.jpg

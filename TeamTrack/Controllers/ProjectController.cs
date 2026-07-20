@@ -140,7 +140,12 @@ namespace TeamTrack.Controllers
         [HttpGet("{projectId}/workitems")]
         public async Task<IActionResult> GetWorkItemsByProject(int projectId)
         {
-            var result = await _projectService.GetWorkItemsByProjectAsync(projectId);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Employee";
+            var result = await _projectService.GetWorkItemsByProjectAsync(projectId, userId, userRole);
+            if (result == null)
+                return StatusCode(403, ApiResponse<string>.FailureResponse("You don't have access to this project"));
+
             return Ok(ApiResponse<List<WorkItemResponseDto>>.SuccessResponse(result, "Work items fetched successfully"));
         }
 
@@ -343,12 +348,13 @@ namespace TeamTrack.Controllers
                 return BadRequest(ApiResponse<string>.FailureResponse("Title is required"));
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Employee";
 
             var workItem = await workItemRepo.GetAsync(w => w.Id == workItemId);
             if (workItem == null)
                 return NotFound(ApiResponse<string>.FailureResponse("Task not found"));
 
-            if (workItem.CreatedByUserId != userId)
+            if (userRole != "ProductManager" && workItem.CreatedByUserId != userId)
                 return StatusCode(403, ApiResponse<string>.FailureResponse("Only the creator of this task can edit it"));
 
             workItem.Title = request.Title.Trim();
@@ -417,12 +423,13 @@ namespace TeamTrack.Controllers
         public async Task<IActionResult> DeleteWorkItem(int workItemId, [FromServices] IRepository<WorkItem> workItemRepo)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Employee";
 
             var workItem = await workItemRepo.GetAsync(w => w.Id == workItemId);
             if (workItem == null)
                 return NotFound(ApiResponse<string>.FailureResponse("Task not found"));
 
-            if (workItem.CreatedByUserId != userId)
+            if (userRole != "ProductManager" && workItem.CreatedByUserId != userId)
                 return StatusCode(403, ApiResponse<string>.FailureResponse("Only the creator of this task can delete it"));
 
             workItemRepo.Remove(workItem);
