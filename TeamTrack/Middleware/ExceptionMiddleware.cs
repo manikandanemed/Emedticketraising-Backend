@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
 using TeamTrack.DTOs;
 
@@ -33,7 +33,19 @@ namespace TeamTrack.Middleware
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            var response = ApiResponse<string>.FailureResponse(ex.Message);
+            var messages = new List<string>();
+            Exception? current = ex;
+            while (current != null)
+            {
+                if (!string.IsNullOrWhiteSpace(current.Message))
+                {
+                    messages.Add(current.Message);
+                }
+                current = current.InnerException;
+            }
+            var fullMessage = string.Join(" -> ", messages.Distinct());
+
+            var response = ApiResponse<string>.FailureResponse(fullMessage);
             var json = JsonSerializer.Serialize(response);
             await context.Response.WriteAsync(json);
         }

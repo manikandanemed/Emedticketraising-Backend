@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace TeamTrack.Repositories
 {
@@ -6,6 +6,8 @@ namespace TeamTrack.Repositories
     {
         Task AddAsync(T entity);
         void Remove(T entity);
+        void Detach(T entity);
+        void ClearTracker();
         Task SaveAsync();
         IQueryable<T> Query();
         Task<T?> GetAsync(Expression<Func<T, bool>> predicate);

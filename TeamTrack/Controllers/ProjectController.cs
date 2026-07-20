@@ -116,8 +116,26 @@ namespace TeamTrack.Controllers
                 return BadRequest(ApiResponse<string>.FailureResponse("Title is required"));
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _projectService.CreateWorkItemAsync(projectId, request, userId);
-            return Ok(ApiResponse<WorkItemResponseDto>.SuccessResponse(result, "Work item created successfully"));
+            try
+            {
+                var result = await _projectService.CreateWorkItemAsync(projectId, request, userId);
+                return Ok(ApiResponse<WorkItemResponseDto>.SuccessResponse(result, "Work item created successfully"));
+            }
+            catch (Exception ex)
+            {
+                var messages = new List<string>();
+                Exception? current = ex;
+                while (current != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(current.Message))
+                    {
+                        messages.Add(current.Message);
+                    }
+                    current = current.InnerException;
+                }
+                var detail = string.Join(" -> ", messages.Distinct());
+                return StatusCode(500, ApiResponse<string>.FailureResponse(detail));
+            }
         }
 
         [HttpPost("workitems/upload-attachment")]
@@ -155,9 +173,11 @@ namespace TeamTrack.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? status = null,
-            [FromQuery] string? search = null)
+            [FromQuery] string? search = null,
+            [FromQuery] string? assignedTo = null,
+            [FromQuery] string? dueDate = null)
         {
-            var result = await _projectService.GetWorkItemsByProjectPagedAsync(projectId, page, pageSize, status, search);
+            var result = await _projectService.GetWorkItemsByProjectPagedAsync(projectId, page, pageSize, status, search, assignedTo, dueDate);
             return Ok(ApiResponse<PagedResult<WorkItemResponseDto>>.SuccessResponse(result, "Work items fetched successfully"));
         }
 
@@ -205,8 +225,26 @@ namespace TeamTrack.Controllers
                 return BadRequest(ApiResponse<string>.FailureResponse("Title is required"));
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = await _bugService.CreateBugWithScreenshotAsync(request, screenshot, userId);
-            return Ok(ApiResponse<BugResponseDto>.SuccessResponse(result, "Bug created successfully"));
+            try
+            {
+                var result = await _bugService.CreateBugWithScreenshotAsync(request, screenshot, userId);
+                return Ok(ApiResponse<BugResponseDto>.SuccessResponse(result, "Bug created successfully"));
+            }
+            catch (Exception ex)
+            {
+                var messages = new List<string>();
+                Exception? current = ex;
+                while (current != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(current.Message))
+                    {
+                        messages.Add(current.Message);
+                    }
+                    current = current.InnerException;
+                }
+                var detail = string.Join(" -> ", messages.Distinct());
+                return StatusCode(500, ApiResponse<string>.FailureResponse(detail));
+            }
         }
 
         [HttpGet("workitems/{workItemId}/bugs")]

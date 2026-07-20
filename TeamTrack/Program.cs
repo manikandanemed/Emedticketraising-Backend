@@ -252,10 +252,58 @@ using (var scope = app.Services.CreateScope())
               AND id NOT IN (SELECT work_item_id FROM bugs);
             ";
         context.Database.ExecuteSqlRaw(sql);
+
+        // Dynamically resynchronize all primary key identity sequences to MAX(id) to prevent duplicate key errors
+        var resetSequencesSql = @"
+            DO $$
+            DECLARE
+                rec RECORD;
+                seq_name text;
+                max_id bigint;
+            BEGIN
+                FOR rec IN 
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+                LOOP
+                    BEGIN
+                        seq_name := pg_get_serial_sequence(rec.table_name, 'id');
+                        IF seq_name IS NULL THEN
+                            IF EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'S' AND relname = rec.table_name || '_id_seq') THEN
+                                seq_name := rec.table_name || '_id_seq';
+                            END IF;
+                        END IF;
+
+                        IF seq_name IS NOT NULL THEN
+                            EXECUTE format('SELECT COALESCE(MAX(id), 0) FROM %I', rec.table_name) INTO max_id;
+                            IF max_id > 0 THEN
+                                EXECUTE format('SELECT setval(%L, %s, true)', seq_name, max_id);
+                            ELSE
+                                EXECUTE format('SELECT setval(%L, 1, false)', seq_name);
+                            END IF;
+                        END IF;
+                    EXCEPTION WHEN OTHERS THEN
+                        -- Ignore tables that lack valid id column or cause errors
+                    END;
+                END LOOP;
+
+                -- Explicit sequence resets for critical work item and bug tables
+                BEGIN
+                    SELECT setval(pg_get_serial_sequence('bugs', 'id'), COALESCE((SELECT MAX(id) FROM bugs), 1), true);
+                EXCEPTION WHEN OTHERS THEN END;
+                BEGIN
+                    SELECT setval(pg_get_serial_sequence('work_items', 'id'), COALESCE((SELECT MAX(id) FROM work_items), 1), true);
+                EXCEPTION WHEN OTHERS THEN END;
+                BEGIN
+                    SELECT setval(pg_get_serial_sequence('work_item_activity_logs', 'id'), COALESCE((SELECT MAX(id) FROM work_item_activity_logs), 1), true);
+                EXCEPTION WHEN OTHERS THEN END;
+            END $$;
+        ";
+        context.Database.ExecuteSqlRaw(resetSequencesSql);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error creating daily_status_notes table: {ex.Message}");
+        Console.WriteLine($"Error running DB initialization: {ex.Message}");
     }
 }
 

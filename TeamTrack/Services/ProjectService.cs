@@ -13,8 +13,9 @@ namespace TeamTrack.Services
         private readonly IRepository<Bug> _bugRepo;
         private readonly IRepository<WorkItemActivityLog> _activityRepo;
         private readonly IRepository<Product> _productRepo;
+        private readonly IRepository<Module> _moduleRepo;
 
-        public ProjectService(IRepository<Project> projectRepo, IRepository<WorkItem> workItemRepo, IRepository<User> userRepo, IRepository<Bug> bugRepo, IRepository<WorkItemActivityLog> activityRepo, IRepository<Product> productRepo)
+        public ProjectService(IRepository<Project> projectRepo, IRepository<WorkItem> workItemRepo, IRepository<User> userRepo, IRepository<Bug> bugRepo, IRepository<WorkItemActivityLog> activityRepo, IRepository<Product> productRepo, IRepository<Module> moduleRepo)
         {
             _projectRepo = projectRepo;
             _workItemRepo = workItemRepo;
@@ -22,6 +23,7 @@ namespace TeamTrack.Services
             _bugRepo = bugRepo;
             _activityRepo = activityRepo;
             _productRepo = productRepo;
+            _moduleRepo = moduleRepo;
         }
 
         public async Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto request, int userId)
@@ -169,91 +171,164 @@ namespace TeamTrack.Services
 
         public async Task<WorkItemResponseDto> CreateWorkItemAsync(int projectId, CreateWorkItemRequestDto request, int userId)
         {
-            // ── Project-based work number (SIG-001, EMD-002, …) ──────────────
             var project = await _projectRepo.Query().FirstOrDefaultAsync(p => p.Id == projectId);
-            var prefix = project?.ProjectNumber ?? "WRK";
-            
-            string workNumber;
+            if (project == null)
+            {
+                throw new Exception("Project not found.");
+            }
+            var prefix = string.IsNullOrWhiteSpace(project.ProjectNumber) ? "WRK" : project.ProjectNumber;
+
             var isBug = request.WorkType != null && request.WorkType.ToLower() == "bug";
-            if (isBug)
-            {
-                var bugCount = await _workItemRepo.Query().CountAsync(w => w.ProjectId == projectId && w.WorkType.ToLower() == "bug");
-                workNumber = $"{prefix}-BUG-{(bugCount + 1):D3}";
-            }
-            else
-            {
-                var taskCount = await _workItemRepo.Query().CountAsync(w => w.ProjectId == projectId && w.WorkType.ToLower() != "bug");
-                workNumber = $"{prefix}-{(taskCount + 1):D3}";
-            }
-            // ─────────────────────────────────────────────────────────────────
+            var prefixPattern = isBug ? $"{prefix}-BUG-" : $"{prefix}-";
 
-            var workItem = new WorkItem
+            // Sanitize Foreign Keys to prevent FK constraint violations
+            int? validModuleId = request.ModuleId;
+            if (validModuleId.HasValue && validModuleId.Value > 0)
             {
-                WorkNumber = workNumber,
-                Title = request.Title,
-                Description = request.Description,
-                Priority = request.Priority,
-                Status = string.IsNullOrEmpty(request.Status) ? "pending" : request.Status,
-                WorkType = string.IsNullOrEmpty(request.WorkType) ? "Task" : request.WorkType,
-                StartDate = request.StartDate.HasValue ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc) : null,
-                ParentId = request.ParentId,
-                Labels = request.Labels,
-                Team = request.Team,
-                AttachmentUrls = request.AttachmentUrls,
-                EpicName = request.EpicName,
-                EpicColor = request.EpicColor,
-                ProjectId = projectId,
-                ModuleId = request.ModuleId,
-                CreatedByUserId = userId,
-                AssignedToUserId = request.AssignedToUserId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                DueDate = request.DueDate.HasValue ? DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc) : null,
-                FixedBillNumber = request.FixedBillNumber,
-                RaisedBillNumber = request.RaisedBillNumber,
-                DeveloperBillLock = request.DeveloperBillLock,
-                RaisedBuild = request.RaisedBuild,
-                FixedBuild = request.FixedBuild
-            };
+                var moduleExists = await _moduleRepo.Query().AnyAsync(m => m.Id == validModuleId.Value);
+                if (!moduleExists) validModuleId = null;
+            }
 
-            await _workItemRepo.AddAsync(workItem);
-            await _workItemRepo.SaveAsync();
+            int? validAssignedToUserId = request.AssignedToUserId;
+            if (validAssignedToUserId.HasValue && validAssignedToUserId.Value > 0)
+            {
+                var userExists = await _userRepo.Query().AnyAsync(u => u.Id == validAssignedToUserId.Value);
+                if (!userExists) validAssignedToUserId = null;
+            }
+
+            // Query existing work numbers globally across all projects starting with prefix
+            var existingNumbers = await _workItemRepo.Query()
+                .Where(w => w.WorkNumber.StartsWith(prefixPattern) || w.WorkNumber.StartsWith(prefix))
+                .Select(w => w.WorkNumber)
+                .ToListAsync();
+
+            var baseSeq = NextSequenceNumber(existingNumbers);
+
+            WorkItem workItem = null!;
+            const int maxAttempts = 30;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var seq = baseSeq + attempt;
+                var workNumber = isBug ? $"{prefix}-BUG-{seq:D3}" : $"{prefix}-{seq:D3}";
+
+                // Prevent collision before insert
+                var existsInDb = await _workItemRepo.Query().AnyAsync(w => w.WorkNumber == workNumber);
+                if (existsInDb) continue;
+
+                workItem = new WorkItem
+                {
+                    WorkNumber = workNumber,
+                    Title = request.Title,
+                    Description = request.Description,
+                    Priority = string.IsNullOrEmpty(request.Priority) ? "medium" : request.Priority,
+                    Status = string.IsNullOrEmpty(request.Status) ? "pending" : request.Status,
+                    WorkType = string.IsNullOrEmpty(request.WorkType) ? "Task" : request.WorkType,
+                    StartDate = request.StartDate.HasValue ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc) : null,
+                    ParentId = request.ParentId,
+                    Labels = request.Labels,
+                    Team = request.Team,
+                    AttachmentUrls = request.AttachmentUrls,
+                    EpicName = request.EpicName,
+                    EpicColor = request.EpicColor,
+                    ProjectId = projectId,
+                    ModuleId = validModuleId,
+                    CreatedByUserId = userId,
+                    AssignedToUserId = validAssignedToUserId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    DueDate = request.DueDate.HasValue ? DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc) : null,
+                    FixedBillNumber = request.FixedBillNumber,
+                    RaisedBillNumber = request.RaisedBillNumber,
+                    DeveloperBillLock = request.DeveloperBillLock,
+                    RaisedBuild = request.RaisedBuild,
+                    FixedBuild = request.FixedBuild
+                };
+
+                try
+                {
+                    await _workItemRepo.AddAsync(workItem);
+                    await _workItemRepo.SaveAsync();
+                    break;
+                }
+                catch (DbUpdateException ex)
+                {
+                    _workItemRepo.Detach(workItem);
+                    if (attempt == maxAttempts - 1)
+                    {
+                        var inner = ex.InnerException?.Message ?? ex.Message;
+                        throw new Exception($"Error saving WorkItem: {ex.Message} -> {inner}", ex);
+                    }
+                }
+            }
 
             // ── Activity log: Created ──────────────────────────────────────────
-            var createLog = new WorkItemActivityLog
+            try
             {
-                WorkItemId = workItem.Id,
-                Action = "Created",
-                ByUserId = userId,
-                ToUserId = request.AssignedToUserId,
-                Note = request.AssignedToUserId.HasValue ? null : "No assignee at creation",
-                Timestamp = DateTime.UtcNow
-            };
-            await _activityRepo.AddAsync(createLog);
-            await _activityRepo.SaveAsync();
+                var createLog = new WorkItemActivityLog
+                {
+                    WorkItemId = workItem.Id,
+                    Action = "Created",
+                    ByUserId = userId,
+                    ToUserId = validAssignedToUserId,
+                    Note = validAssignedToUserId.HasValue ? null : "No assignee at creation",
+                    Timestamp = DateTime.UtcNow
+                };
+                await _activityRepo.AddAsync(createLog);
+                await _activityRepo.SaveAsync();
+            }
+            catch (Exception)
+            {
+                // Activity log failure should not block work item creation
+            }
             // ─────────────────────────────────────────────────────────────────
 
             // If work type is Bug, automatically create a linked Bug record so it shows up in the bug queues
             if (workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase))
             {
-                var bug = new Bug
+                var existingBugNumbers = await _bugRepo.Query().Select(b => b.BugNumber).ToListAsync();
+                var bugBaseSeq = NextSequenceNumber(existingBugNumbers);
+
+                for (var attempt = 0; attempt < maxAttempts; attempt++)
                 {
-                    BugNumber = workItem.WorkNumber,
-                    Title = workItem.Title,
-                    Description = workItem.Description,
-                    Status = MapWorkItemStatusToBugStatus(workItem.Status),
-                    WorkItemId = workItem.Id,
-                    RaisedByUserId = userId,
-                    AssignedToUserId = workItem.AssignedToUserId,
-                    Severity = request.Severity,
-                    IssueType = request.IssueType ?? "New",
-                    RaisedBuild = request.RaisedBuild,
-                    FixedBuild = request.FixedBuild,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                await _bugRepo.AddAsync(bug);
-                await _bugRepo.SaveAsync();
+                    var seq = bugBaseSeq + attempt;
+                    var bugNum = attempt == 0 ? workItem.WorkNumber : $"{prefix}-BUG-{seq:D3}";
+                    var bugExists = await _bugRepo.Query().AnyAsync(b => b.BugNumber == bugNum);
+                    if (bugExists) continue;
+
+                    var bug = new Bug
+                    {
+                        BugNumber = bugNum,
+                        Title = workItem.Title,
+                        Description = workItem.Description,
+                        Status = MapWorkItemStatusToBugStatus(workItem.Status),
+                        WorkItemId = workItem.Id,
+                        RaisedByUserId = userId,
+                        AssignedToUserId = validAssignedToUserId,
+                        Severity = request.Severity,
+                        IssueType = request.IssueType ?? "New",
+                        RaisedBuild = request.RaisedBuild,
+                        FixedBuild = request.FixedBuild,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    try
+                    {
+                        await _bugRepo.AddAsync(bug);
+                        await _bugRepo.SaveAsync();
+                        break;
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        _bugRepo.Detach(bug);
+                        _bugRepo.ClearTracker();
+                        if (attempt == maxAttempts - 1)
+                        {
+                            var inner = ex.InnerException?.Message ?? ex.Message;
+                            Console.WriteLine($"Failed to create linked Bug record: {ex.Message} -> {inner}");
+                        }
+                    }
+                }
             }
 
             var created = await _workItemRepo.Query()
@@ -294,7 +369,7 @@ namespace TeamTrack.Services
             return items.Select(w => MapWorkItemToDto(w, parents)).ToList();
         }
 
-        public async Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByProjectPagedAsync(int projectId, int page, int pageSize, string? status, string? search)
+        public async Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByProjectPagedAsync(int projectId, int page, int pageSize, string? status, string? search, string? assignedTo = null, string? dueDate = null)
         {
             var query = _workItemRepo.Query()
                 .Include(w => w.Project)
@@ -310,6 +385,21 @@ namespace TeamTrack.Services
             {
                 var statuses = status.Split(',').Select(s => s.Trim()).ToList();
                 query = query.Where(w => statuses.Contains(w.Status));
+            }
+
+            if (!string.IsNullOrWhiteSpace(assignedTo) && assignedTo != "all")
+            {
+                if (assignedTo == "unassigned")
+                    query = query.Where(w => w.AssignedToUserId == null);
+                else
+                    query = query.Where(w => w.AssignedTo != null && w.AssignedTo.Name == assignedTo);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dueDate) && DateOnly.TryParse(dueDate, out var parsedDueDate))
+            {
+                var startDate = parsedDueDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+                var endDate = parsedDueDate.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+                query = query.Where(w => w.DueDate.HasValue && w.DueDate.Value >= startDate && w.DueDate.Value <= endDate);
             }
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -445,6 +535,21 @@ namespace TeamTrack.Services
                     Email = e.Email
                 }).ToList() ?? []
             };
+        }
+
+        // Returns 1 + the highest numeric suffix found among the given "PREFIX-###" style
+        // numbers (e.g. "USE-BUG-011" -> 11). Falls back to count+1 only when nothing
+        // parses, so a gap anywhere in the sequence can never collide with an existing number.
+        private static int NextSequenceNumber(List<string> existingNumbers)
+        {
+            var max = 0;
+            foreach (var number in existingNumbers)
+            {
+                var lastPart = number.Split('-').LastOrDefault();
+                if (lastPart != null && int.TryParse(lastPart, out var seq) && seq > max)
+                    max = seq;
+            }
+            return max > 0 ? max + 1 : existingNumbers.Count + 1;
         }
 
         private WorkItemResponseDto MapWorkItemToDto(WorkItem w, Dictionary<int, WorkItem>? parentDict = null)

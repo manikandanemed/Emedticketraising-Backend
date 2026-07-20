@@ -18,28 +18,79 @@ namespace TeamTrack.Services
             _workItemRepo = workItemRepo;
         }
 
+        // Returns 1 + the highest numeric suffix among existing "BUG-###" numbers
+        // (not a row count), so a gap in the sequence — from a deleted bug or an
+        // import — never causes the next number to collide with one that already
+        // exists. This is only a best-effort starting guess: InsertBugWithRetryAsync
+        // below still retries on an actual DB conflict, so a numbering clash can
+        // never bubble up as a 500 to the user.
+        private async Task<int> NextBugSequenceNumberAsync()
+        {
+            var existingBugNumbers = await _bugRepo.Query().Select(b => b.BugNumber).ToListAsync();
+            var max = 0;
+            foreach (var number in existingBugNumbers)
+            {
+                var lastPart = number.Split('-').LastOrDefault();
+                if (lastPart != null && int.TryParse(lastPart, out var seq) && seq > max)
+                    max = seq;
+            }
+            return max > 0 ? max + 1 : existingBugNumbers.Count + 1;
+        }
+
+        private async Task<Bug> InsertBugWithRetryAsync(Func<int, Bug> bugFactory)
+        {
+            var baseSeq = await NextBugSequenceNumberAsync();
+            const int maxAttempts = 30;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var bug = bugFactory(baseSeq + attempt);
+                try
+                {
+                    await _bugRepo.AddAsync(bug);
+                    await _bugRepo.SaveAsync();
+                    return bug;
+                }
+                catch (DbUpdateException ex)
+                {
+                    _bugRepo.Detach(bug);
+                    if (attempt == maxAttempts - 1)
+                    {
+                        var inner = ex.InnerException?.Message ?? ex.Message;
+                        throw new InvalidOperationException($"Failed to generate a unique bug number: {ex.Message} -> {inner}", ex);
+                    }
+                }
+            }
+            throw new InvalidOperationException("Failed to generate a unique bug number after multiple attempts.");
+        }
+
         public async Task<BugResponseDto> CreateBugAsync(CreateBugRequestDto request, int userId)
         {
-            var count = await _bugRepo.Query().CountAsync();
-            var bug = new Bug
+            var workItemExists = await _workItemRepo.Query().AnyAsync(w => w.Id == request.WorkItemId);
+            if (!workItemExists)
             {
-                BugNumber = $"BUG-{(count + 1):D3}",
+                throw new Exception($"Work item with ID {request.WorkItemId} not found.");
+            }
+
+            int? validAssignedTo = request.AssignedToUserId;
+            if (validAssignedTo.HasValue && validAssignedTo.Value <= 0)
+                validAssignedTo = null;
+
+            var bug = await InsertBugWithRetryAsync(seq => new Bug
+            {
+                BugNumber = $"BUG-{seq:D3}",
                 Title = request.Title,
                 Description = request.Description,
                 ScreenshotUrl = request.ScreenshotUrl,
                 Status = "open",
                 WorkItemId = request.WorkItemId,
                 RaisedByUserId = userId,
-                AssignedToUserId = request.AssignedToUserId,
+                AssignedToUserId = validAssignedTo,
                 RaisedBuild = request.RaisedBuild,
                 Severity = request.Severity,
                 IssueType = request.IssueType ?? "New",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
-            };
-
-            await _bugRepo.AddAsync(bug);
-            await _bugRepo.SaveAsync();
+            });
 
             var created = await _bugRepo.Query()
                 .Include(b => b.WorkItem)
@@ -52,31 +103,37 @@ namespace TeamTrack.Services
 
         public async Task<BugResponseDto> CreateBugWithScreenshotAsync(CreateBugRequestDto request, IFormFile? screenshot, int userId)
         {
+            var workItemExists = await _workItemRepo.Query().AnyAsync(w => w.Id == request.WorkItemId);
+            if (!workItemExists)
+            {
+                throw new Exception($"Work item with ID {request.WorkItemId} not found.");
+            }
+
+            int? validAssignedTo = request.AssignedToUserId;
+            if (validAssignedTo.HasValue && validAssignedTo.Value <= 0)
+                validAssignedTo = null;
+
             string? screenshotUrl = null;
 
             if (screenshot != null)
                 screenshotUrl = await _fileService.UploadScreenshotAsync(screenshot);
 
-            var count = await _bugRepo.Query().CountAsync();
-            var bug = new Bug
+            var bug = await InsertBugWithRetryAsync(seq => new Bug
             {
-                BugNumber = $"BUG-{(count + 1):D3}",
+                BugNumber = $"BUG-{seq:D3}",
                 Title = request.Title,
                 Description = request.Description,
                 ScreenshotUrl = screenshotUrl,
                 Status = "open",
                 WorkItemId = request.WorkItemId,
                 RaisedByUserId = userId,
-                AssignedToUserId = request.AssignedToUserId,
+                AssignedToUserId = validAssignedTo,
                 RaisedBuild = request.RaisedBuild,
                 Severity = request.Severity,
                 IssueType = request.IssueType ?? "New",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
-            };
-
-            await _bugRepo.AddAsync(bug);
-            await _bugRepo.SaveAsync();
+            });
 
             var created = await _bugRepo.Query()
                 .Include(b => b.WorkItem)

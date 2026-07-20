@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TeamTrack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+604959a4aabdba6e3eaa789831c37ed7faad7fca")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6a87c32033be9329203198d47323d6b4f56df617")]
 [assembly: System.Reflection.AssemblyProductAttribute("TeamTrack")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TeamTrack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

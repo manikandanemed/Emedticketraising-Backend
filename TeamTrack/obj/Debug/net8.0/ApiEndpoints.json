@@ -433,6 +433,16 @@
         "Name": "search",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "assignedTo",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "dueDate",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []

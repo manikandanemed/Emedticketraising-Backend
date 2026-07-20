@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using TeamTrack.Data;
 
@@ -21,6 +21,16 @@ namespace TeamTrack.Repositories
         public void Remove(T entity)
         {
             _context.Set<T>().Remove(entity);
+        }
+
+        public void Detach(T entity)
+        {
+            _context.Entry(entity).State = EntityState.Detached;
+        }
+
+        public void ClearTracker()
+        {
+            _context.ChangeTracker.Clear();
         }
 
         public async Task SaveAsync()

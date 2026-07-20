@@ -16,7 +16,7 @@ namespace TeamTrack.Services
         Task<WorkItemResponseDto> CreateWorkItemAsync(int projectId, CreateWorkItemRequestDto request, int userId);
 
         // Paginated project work items
-        Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByProjectPagedAsync(int projectId, int page, int pageSize, string? status, string? search);
+        Task<PagedResult<WorkItemResponseDto>> GetWorkItemsByProjectPagedAsync(int projectId, int page, int pageSize, string? status, string? search, string? assignedTo = null, string? dueDate = null);
 
         // Non-paged for kanban/detail views. Returns null if the caller (an Employee)
         // is not assigned to this project — ProductManagers can access any project.
