@@ -221,7 +221,8 @@ namespace TeamTrack.Services
                     Title = request.Title,
                     Description = request.Description,
                     Priority = string.IsNullOrEmpty(request.Priority) ? "medium" : request.Priority,
-                    Status = string.IsNullOrEmpty(request.Status) ? "pending" : request.Status,
+                    //Status = string.IsNullOrEmpty(request.Status) ? "pending" : request.Status,
+                    Status = ResolveWorkItemStatus(request.Status, isBug),
                     WorkType = string.IsNullOrEmpty(request.WorkType) ? "Task" : request.WorkType,
                     StartDate = request.StartDate.HasValue ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc) : null,
                     ParentId = request.ParentId,
@@ -629,6 +630,34 @@ namespace TeamTrack.Services
             return dto;
         }
 
+
+        // Official list of WorkItem.Status values used across the frontend (Task update dropdowns, filters, dashboard)
+        private static readonly HashSet<string> ValidWorkItemStatuses = new(StringComparer.OrdinalIgnoreCase)
+{
+    "pending", "assigned", "reopened", "in_progress", "future_release", "fixed", "completed", "closed", "waiting_customer"
+};
+
+        /// <summary>
+        /// Resolves the status to save on a WorkItem. The "Create Bug" form only offers "new"/"open"
+        /// as initial status (a Bug-specific concept) — those get normalized to "pending" so that
+        /// WorkItem.Status always uses the same vocabulary as the update/filter dropdowns.
+        /// Anything else not in the official list is rejected.
+        /// </summary>
+        public static string ResolveWorkItemStatus(string? requestedStatus, bool isBug)
+        {
+            if (string.IsNullOrWhiteSpace(requestedStatus))
+                return "pending";
+
+            var normalized = requestedStatus.Trim().ToLower();
+
+            if (isBug && (normalized == "new" || normalized == "open"))
+                return "pending";
+
+            if (!ValidWorkItemStatuses.Contains(normalized))
+                throw new Exception($"Invalid status '{requestedStatus}'. Allowed values: pending, assigned, reopened, in_progress, future_release, fixed, completed, closed.");
+
+            return normalized;
+        }
         private string MapWorkItemStatusToBugStatus(string wStatus)
         {
             return wStatus.ToLower() switch
@@ -676,8 +705,11 @@ namespace TeamTrack.Services
                 if (request.FixedBillNumber != null) workItem.FixedBillNumber = request.FixedBillNumber;
             }
 
+            //var oldStatus = workItem.Status;
+            //workItem.Status = request.Status;
             var oldStatus = workItem.Status;
-            workItem.Status = request.Status;
+            var isBugItem = workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase);
+            workItem.Status = ResolveWorkItemStatus(request.Status, isBugItem);
             workItem.UpdatedAt = DateTime.UtcNow;
 
             // Always save FixedBuild on the WorkItem itself for ALL work types

@@ -397,6 +397,11 @@ namespace TeamTrack.Controllers
 
             workItem.Title = request.Title.Trim();
             workItem.Description = request.Description?.Trim();
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                var isBugItem = workItem.WorkType.Equals("Bug", StringComparison.OrdinalIgnoreCase);
+                workItem.Status = ProjectService.ResolveWorkItemStatus(request.Status, isBugItem);
+            }
             workItem.Priority = request.Priority;
             workItem.ModuleId = request.ModuleId;
             workItem.StartDate = request.StartDate;

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "iZAiN87en5o=",
+  "dgSpecHash": "HNW/L6eSWaA=",
   "success": true,
   "projectFilePath": "D:\\myfirstconsoleapp\\Emedticket- Back and frontend\\TicketRaising-Backend\\TeamTrack\\TeamTrack.csproj",
   "expectedPackageFiles": [
@@ -59,7 +59,9 @@
     "C:\\Users\\ADMIN\\.nuget\\packages\\system.text.encoding.codepages\\6.0.0\\system.text.encoding.codepages.6.0.0.nupkg.sha512",
     "C:\\Users\\ADMIN\\.nuget\\packages\\system.text.encodings.web\\8.0.0\\system.text.encodings.web.8.0.0.nupkg.sha512",
     "C:\\Users\\ADMIN\\.nuget\\packages\\system.text.json\\8.0.0\\system.text.json.8.0.0.nupkg.sha512",
-    "C:\\Users\\ADMIN\\.nuget\\packages\\system.threading.channels\\6.0.0\\system.threading.channels.6.0.0.nupkg.sha512"
+    "C:\\Users\\ADMIN\\.nuget\\packages\\system.threading.channels\\6.0.0\\system.threading.channels.6.0.0.nupkg.sha512",
+    "C:\\Users\\ADMIN\\.nuget\\packages\\xabe.ffmpeg\\6.0.2\\xabe.ffmpeg.6.0.2.nupkg.sha512",
+    "C:\\Users\\ADMIN\\.nuget\\packages\\xabe.ffmpeg.downloader\\6.0.2\\xabe.ffmpeg.downloader.6.0.2.nupkg.sha512"
   ],
   "logs": []
 }

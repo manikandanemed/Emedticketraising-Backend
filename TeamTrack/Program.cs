@@ -6,6 +6,10 @@ using Microsoft.IdentityModel.Tokens;
 using TeamTrack.Data;
 using TeamTrack.Repositories;
 using TeamTrack.Services;
+//new
+using Xabe.FFmpeg;
+using Xabe.FFmpeg.Downloader;
+//new
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,7 +93,29 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+//new
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 500_000_000; // 500 MB raw upload limit (before compression)
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 500_000_000;
+});
+//new
+
 var app = builder.Build();
+
+var ffmpegFolder = Path.Combine(AppContext.BaseDirectory, "FFmpeg");
+if (!Directory.Exists(ffmpegFolder))
+    Directory.CreateDirectory(ffmpegFolder);
+
+if (!File.Exists(Path.Combine(ffmpegFolder, "ffmpeg")) && !File.Exists(Path.Combine(ffmpegFolder, "ffmpeg.exe")))
+{
+    await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Full, ffmpegFolder);
+}
+Xabe.FFmpeg.FFmpeg.SetExecutablesPath(ffmpegFolder);
 
 if (app.Environment.IsDevelopment())
 {
